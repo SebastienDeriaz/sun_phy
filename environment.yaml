@@ -1,0 +1,9 @@
+# run: conda env create --file environment.yml
+name: sun-phy-env
+dependencies:
+- python>=3.7
+- anaconda
+- pip
+- numpy>=1.21  # pin version for conda
+#- pip:
+#  - colorama
