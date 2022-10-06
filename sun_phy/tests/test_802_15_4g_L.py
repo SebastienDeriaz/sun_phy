@@ -1,4 +1,4 @@
-from sun_phy import Mr_ofdm_modulator
+from ..mr_ofdm.mr_ofdm_modulator import Mr_ofdm_modulator
 import numpy as np
 
 tables_path = "sun_phy/tests/"
