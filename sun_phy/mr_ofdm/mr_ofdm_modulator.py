@@ -1,6 +1,6 @@
 import numpy as np
 from .ofdm_modulator import Ofdm_modulator
-from sun_phy.tools.pn9 import Pn9
+from ..tools.pn9 import Pn9
 from .rate_encoder import Rate_one_half, Rate_three_quarter
 from .fields import PHR, TAIL_BITS
 
