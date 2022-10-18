@@ -17,7 +17,7 @@ MODULATOR_PARAMETERS = {
     1 : {
         "phyMRFSKSFD" : 0,
         "phyFSKPreambleLength" : 4,
-        "FCS_length" : 4,
+        "macFCSType" : 0,
         "modulation" : "2FSK",
         "phyFSKFECEnabled" : False,
         "phyFSKFECScheme" : 0, # unused
@@ -28,7 +28,7 @@ MODULATOR_PARAMETERS = {
     2 : {
         "phyMRFSKSFD" : 0,
         "phyFSKPreambleLength" : 4,
-        "FCS_length" : 4,
+        "macFCSType" : 0,
         "modulation" : "2FSK",
         "phyFSKFECEnabled" : False,
         "phyFSKFECScheme" : 0, # unused
@@ -40,7 +40,7 @@ MODULATOR_PARAMETERS = {
     3 : {
         "phyMRFSKSFD" : 0,
         "phyFSKPreambleLength" : 4,
-        "FCS_length" : 4,
+        "macFCSType" : 0,
         "modulation" : "2FSK",
         "phyFSKFECEnabled" : True,
         "phyFSKFECScheme" : 1,
@@ -51,7 +51,7 @@ MODULATOR_PARAMETERS = {
     4 : {
         "phyMRFSKSFD" : 1,
         "phyFSKPreambleLength" : 4,
-        "FCS_length" : 4,
+        "macFCSType" : 0,
         "modulation" : "2FSK",
         "phyFSKFECEnabled" : True,
         "phyFSKFECScheme" : 0,
@@ -62,7 +62,7 @@ MODULATOR_PARAMETERS = {
     5 : {
         "phyMRFSKSFD" : 1,
         "phyFSKPreambleLength" : 4,
-        "FCS_length" : 4,
+        "macFCSType" : 0,
         "modulation" : "4FSK",
         "phyFSKFECEnabled" : False,
         "phyFSKFECScheme" : 0, # unused
@@ -73,7 +73,7 @@ MODULATOR_PARAMETERS = {
     6 : {
         "phyMRFSKSFD" : 0,
         "phyFSKPreambleLength" : 4,
-        "FCS_length" : 4,
+        "macFCSType" : 0,
         "modulation" : "4FSK",
         "phyFSKFECEnabled" : True,
         "phyFSKFECScheme" : 1, # unused

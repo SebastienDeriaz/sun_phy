@@ -1,4 +1,6 @@
 import numpy as np
+
+from ..tools.bits import to_binary_array
 from .ofdm_modulator import Ofdm_modulator
 from ..tools.pn9 import Pn9
 from .rate_encoder import Rate_one_half, Rate_three_quarter
@@ -606,14 +608,17 @@ class Mr_ofdm_modulator():
 
         return PAYLOAD_I, PAYLOAD_Q
 
-    def messageToIQ(self, message):
+    def messageToIQ(self, message, binary=False):
         """
         Encodes the given message with MR-OFDM modulator
 
         Parameters
         ----------
-        message : ndarray
+        message : ndarray of bits/octets, bytearray, bytes, list of bits/octets
             Message to encode
+        binary : bool
+            True : message is an array of bits
+            False : message is an array of octets or a bytearray
 
         Returns
         -------
@@ -625,18 +630,18 @@ class Mr_ofdm_modulator():
             I and Q signals frequency
         """
         # Convert list to numpy array if necessary
-        if isinstance(message, list):
-            message = np.asarray(message)
+        message_binary = to_binary_array(message, binary)
+
         # Generate STF
         STF_I, STF_Q = self._STF()
         # Generate LTF
         LTF_I, LTF_Q = self._LTF()
 
         # Generate header
-        PHR_I, PHR_Q, mod_phy = self._PHR(message.size)
+        PHR_I, PHR_Q, mod_phy = self._PHR(message_binary.size)
 
         # Generate Payload
-        PAYLOAD_I, PAYLOAD_Q = self._payload(message, mod_phy)
+        PAYLOAD_I, PAYLOAD_Q = self._payload(message_binary, mod_phy)
         
         I = np.block([STF_I, LTF_I, PHR_I, PAYLOAD_I])
         Q = np.block([STF_Q, LTF_Q, PHR_Q, PAYLOAD_Q])

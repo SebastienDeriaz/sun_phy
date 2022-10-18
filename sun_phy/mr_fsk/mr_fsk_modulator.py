@@ -5,7 +5,7 @@ MR-FSK Modulator
 import numpy as np
 from enum import Enum
 from ..tools.pn9 import Pn9
-from ..tools.bits import from_bitstring
+from ..tools.bits import from_bitstring, to_binary_array
 
 from colorama import Fore
 
@@ -56,7 +56,7 @@ NRNSC_TAIL_BITS = np.array([0, 0, 0])
 
 
 class Mr_fsk_modulator:
-    def __init__(self, phyMRFSKSFD, phyFSKPreambleLength, modulation, phyFSKFECEnabled, phyFSKFECScheme, FCS_length, phyFSKScramblePSDU, phyFSKFECInterleavingRSC):
+    def __init__(self, phyMRFSKSFD, phyFSKPreambleLength, modulation, phyFSKFECEnabled, phyFSKFECScheme, macFCSType, phyFSKScramblePSDU, phyFSKFECInterleavingRSC):
         """
         Creates an instance of a MR-FSK modulator
 
@@ -72,9 +72,9 @@ class Mr_fsk_modulator:
             Enable FEC encoding (True) or not (False)
         phyFSKFECScheme : int
             Configures the FEC mode. 0 for NRNSC and 1 for RSC
-        FCS_length : int
-            Lengths of the FCS (2 or 4)
-            FCS Type describing the length of transmitted FCS. 4 -> 0 and 2 -> 1
+        macFCSType : int
+            Lengths of the FCS 0 -> 4, 1 -> 2
+            FCS Type describing the length of transmitted FCS.
         phyFSKScramblePSDU : bool
             Enable (True) or disable (False) the whitening of the PSDU
         phyFSKFECInterleavingRSC : bool
@@ -110,10 +110,10 @@ class Mr_fsk_modulator:
         elif phyFSKFECScheme not in [0, 1]:
             raise ValueError("phyFSKFECScheme should be 0 or 1")
 
-        if not isinstance(FCS_length, int):
+        if not isinstance(macFCSType, int):
             raise TypeError("FCS_length should be of type int")
-        elif FCS_length not in [2, 4]:
-            raise ValueError("FCS_length should be 2 or 4")
+        elif macFCSType not in [0, 1]:
+            raise ValueError("FCS_length should be 0 or 1")
 
         if not isinstance(phyFSKScramblePSDU, bool):
             raise TypeError("phyFSKScramblePSDU should be of type bool")
@@ -121,7 +121,7 @@ class Mr_fsk_modulator:
         if not isinstance(phyFSKFECInterleavingRSC, bool):
             raise TypeError("phyFSKFECInterleavingRSC should be of type bool")
 
-        self._FCS_Type = 0 if FCS_length == 4 else 1
+        self._macFCSType = macFCSType
         self._phyFSKFECEnabled = phyFSKFECEnabled
         self._phyMRFSKSFD = phyMRFSKSFD
         self._phyFSKPreambleLength = phyFSKPreambleLength
@@ -213,7 +213,7 @@ class Mr_fsk_modulator:
         # See Figure 114
         signal[0] = 0  # MS
         signal[1:2+1] = 0  # Reserved
-        signal[3] = self._FCS_Type  # FCS type
+        signal[3] = self._macFCSType  # FCS type
         signal[4] = 1 if self._phyFSKScramblePSDU else 0  # DW
         signal[5:] = self._bin(message_length, 11)  # L
 
@@ -320,36 +320,6 @@ class Mr_fsk_modulator:
 
         return output
 
-    def _message_to_bits(self, byte_message):
-        """
-        Check message and convert to bitstream
-
-        Parameters
-        ----------
-        byte_message : bytearray, ndarray
-            Message to convert (bytearray or unsigned int array)
-
-        Returns
-        -------
-        bitstream : ndarray
-            Output signal (ndarray of 0 or 1)
-        """
-        if isinstance(byte_message, np.ndarray):
-            if np.issubdtype(byte_message, np.integer):
-                if byte_message.min() < 0 or byte_message.max() > 255:
-                    raise ValueError(
-                        "Invalid byte_message range. It should be between 0 and 255")
-            else:
-                raise TypeError(
-                    "byte_message dtype is invalid. It should be integer")
-        elif not isinstance(byte_message, bytearray):
-            raise TypeError(
-                "Invalid byte_messsage type. It should be bytearray or a ndarray of integers")
-
-        bitstream = np.unpackbits(byte_message, bitorder='big')
-
-        return bitstream
-
     def _scrambler(self, PSDU: np.ndarray):
         """
         Applies scrambler (data whitening) to the PSDU
@@ -392,13 +362,7 @@ class Mr_fsk_modulator:
         f : float
             signal frequency
         """
-        if not binary:
-            message_bin = self._message_to_bits(message)
-        else:
-            if isinstance(message, np.ndarray) and message.min() >= 0 and message.max() <= 1:
-                message_bin = message.astype(int)
-            else:
-                raise ValueError("Invalid binary message")
+        message_bin = to_binary_array(message, binary)
 
         PHR_PSDU = np.concatenate(
             [self._PHR(message_bin.size // 8), message_bin])
