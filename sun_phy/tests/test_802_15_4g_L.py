@@ -1,7 +1,8 @@
 from ..mr_ofdm.mr_ofdm_modulator import Mr_ofdm_modulator
 import numpy as np
+from os.path import join
 
-tables_path = "sun_phy/tests/"
+tables_path = "sun_phy/tests/tables"
 
 MODULATOR_SETTINGS = {
     "MCS": 3,
@@ -9,7 +10,7 @@ MODULATOR_SETTINGS = {
     "phyOFDMInterleaving": False
 }
 
-message = np.genfromtxt(tables_path + "L.1.csv", delimiter=',').astype(int)
+message = np.genfromtxt(join(tables_path, "L.1.csv"), delimiter=',').astype(int)
 
 message_binary = []
 for m in message:
@@ -27,12 +28,12 @@ def test_header():
     modulator._PHR(message.size * 8)
 
     # Read the theorethical values from the norm
-    header_th = np.genfromtxt(tables_path + "L.2.csv",
+    header_th = np.genfromtxt(join(tables_path, "L.2.csv"),
                               delimiter=',').astype(int)
     header_encoded_th = np.genfromtxt(
-        tables_path + "L.3.csv", delimiter=',').astype(int)
+        join(tables_path, "L.3.csv"), delimiter=',').astype(int)
     header_interleaved_th = np.genfromtxt(
-        tables_path + "L.4.csv", delimiter=',').astype(int)
+        join(tables_path, "L.4.csv"), delimiter=',').astype(int)
 
     # Assert equality
     assert np.array_equal(modulator._PHY_header,
@@ -48,7 +49,7 @@ def test_payload():
     Tests if the modulator generates a valid payload according to tables L.7, L.8, L.9
     """
     # Load the message
-    message = np.genfromtxt(tables_path + "L.1.csv", delimiter=',').astype(int)
+    message = np.genfromtxt(join(tables_path, "L.1.csv"), delimiter=',').astype(int)
 
     modulator = Mr_ofdm_modulator(**MODULATOR_SETTINGS)
 
@@ -57,11 +58,11 @@ def test_payload():
 
     # Read the theorethical values from the norm
     payload_scrambled_th = np.genfromtxt(
-        tables_path + "L.7.csv", delimiter=',').astype(int)
+        join(tables_path, "L.7.csv"), delimiter=',').astype(int)
     paylaod_encoded_th = np.genfromtxt(
-        tables_path + "L.8.csv", delimiter=',').astype(int)
+        join(tables_path, "L.8.csv"), delimiter=',').astype(int)
     payload_interleaved_th = np.genfromtxt(
-        tables_path + "L.9.csv", delimiter=',').astype(int)
+        join(tables_path, "L.9.csv"), delimiter=',').astype(int)
 
     # Assert equality
     assert np.array_equal(modulator._payload_scrambled[:48], payload_scrambled_th[:48]) and np.array_equal(
@@ -92,7 +93,7 @@ def test_time_domain():
     IQ = I + Q * 1j
 
     # Load theoretical data
-    data_th = np.genfromtxt("sun_phy/tests/L.14.csv",
+    data_th = np.genfromtxt(join(tables_path, 'L.14.csv'),
                             delimiter=',', dtype=float)
 
     data_th = data_th[:, 0] + data_th[:, 1] * 1j

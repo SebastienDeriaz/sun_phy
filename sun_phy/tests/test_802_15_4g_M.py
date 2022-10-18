@@ -1,7 +1,8 @@
 from ..mr_ofdm.mr_ofdm_modulator import Mr_ofdm_modulator
 import numpy as np
+from os.path import join
 
-tables_path = "sun_phy/tests/"
+tables_path = "sun_phy/tests/tables/"
 
 MODULATOR_SETTINGS = {
     "MCS": 3,
@@ -34,10 +35,6 @@ def test_header():
     header_interleaved_th = np.genfromtxt(
         tables_path + "M.3.csv", delimiter=',').astype(int)
 
-
-    print(modulator._PHY_header)
-    print(header_th)
-
     # Assert equality
     assert np.array_equal(modulator._PHY_header,
                           header_th), "Header doesn't match with table M.1"
@@ -61,11 +58,11 @@ def test_payload():
 
     # Read the theorethical values from the norm
     payload_scrambled_th = np.genfromtxt(
-        tables_path + "M.6.csv", delimiter=',').astype(int)
+        join(tables_path, "M.6.csv"), delimiter=',').astype(int)
     paylaod_encoded_th = np.genfromtxt(
-        tables_path + "M.7.csv", delimiter=',').astype(int)
+        join(tables_path, "M.7.csv"), delimiter=',').astype(int)
     payload_interleaved_th = np.genfromtxt(
-        tables_path + "M.8.csv", delimiter=',').astype(int)
+        join(tables_path, "M.8.csv"), delimiter=',').astype(int)
 
     # Assert equality
     assert np.array_equal(modulator._payload_scrambled[:48], payload_scrambled_th[:48]) and np.array_equal(
@@ -96,7 +93,7 @@ def test_time_domain():
     IQ = I + Q * 1j
 
     # Load theoretical data
-    data_th = np.genfromtxt("sun_phy/tests/M.11.csv",
+    data_th = np.genfromtxt(join(tables_path, 'M.11.csv'),
                             delimiter=',', dtype=float)
 
     data_th = data_th[:, 0] + data_th[:, 1] * 1j
