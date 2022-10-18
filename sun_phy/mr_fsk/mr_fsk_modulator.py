@@ -5,6 +5,7 @@ MR-FSK Modulator
 import numpy as np
 from enum import Enum
 from ..tools.pn9 import Pn9
+from ..tools.bits import from_bitstring
 
 from colorama import Fore
 
@@ -14,30 +15,20 @@ class Modulation(Enum):
     FSK4 = 2
 
 
-def _from_bitstring(bit_string: str) -> np.ndarray:
-    """
-    Converts a bitstring to bit array
-
-    Spaces are removed
-    """
-
-    return np.array([int(x) for x in bit_string.replace(' ', '')])
-
-
 # SFD Values as a function of modulation, phyMRFSKSFD and coded/uncoded
 # Key is (modulation, phyMRFSKSFD, is_coded)
 # See tables 131 and 132 of 802.15.4g-2012
 SFD = {
     # Table 131
-    (Modulation.FSK2, 0, True): _from_bitstring('0110 1111 0100 1110'),
-    (Modulation.FSK2, 0, False): _from_bitstring('1001 0000 0100 1110'),
-    (Modulation.FSK2, 1, True): _from_bitstring('0110 0011 0010 1101'),
-    (Modulation.FSK2, 1, False): _from_bitstring('0111 1010 0000 1110'),
+    (Modulation.FSK2, 0, True): from_bitstring('0110 1111 0100 1110'),
+    (Modulation.FSK2, 0, False): from_bitstring('1001 0000 0100 1110'),
+    (Modulation.FSK2, 1, True): from_bitstring('0110 0011 0010 1101'),
+    (Modulation.FSK2, 1, False): from_bitstring('0111 1010 0000 1110'),
     # Table 132
-    (Modulation.FSK4, 0, True):  _from_bitstring('0111 1101 1111 1111 0111 0101 1111 1101'),
-    (Modulation.FSK4, 0, False): _from_bitstring('1101 0111 0101 0101 0111 0101 1111 1101'),
-    (Modulation.FSK4, 1, True):  _from_bitstring('0111 1101 0101 1111 0101 1101 1111 0111'),
-    (Modulation.FSK4, 1, False): _from_bitstring('0111 1111 1101 1101 0101 0101 1111 1101'),
+    (Modulation.FSK4, 0, True):  from_bitstring('0111 1101 1111 1111 0111 0101 1111 1101'),
+    (Modulation.FSK4, 0, False): from_bitstring('1101 0111 0101 0101 0111 0101 1111 1101'),
+    (Modulation.FSK4, 1, True):  from_bitstring('0111 1101 0101 1111 0101 1101 1111 0111'),
+    (Modulation.FSK4, 1, False): from_bitstring('0111 1111 1101 1101 0101 0101 1111 1101'),
 }
 
 # preamble field as a function of modulation
@@ -288,9 +279,6 @@ class Mr_fsk_modulator:
         # Add tails bits and pad bits
         TAIL_BITS = RSC_TAIL_BITS[M] if self._phyFSKFECScheme else NRNSC_TAIL_BITS
 
-        # For testing concatenation before encoding
-        #print(np.concatenate([data, TAIL_BITS, PAD_BITS]))
-
         for bi in np.concatenate([TAIL_BITS, PAD_BITS]):
             if self._phyFSKFECScheme:
                 M, ui0, ui1 = M_iter_RSC(M, bi)
@@ -441,9 +429,6 @@ class Mr_fsk_modulator:
             self._PHR_PSDU_scrambled[PSDU_start:] = self._scrambler(
                 self._PHR_PSDU_scrambled[PSDU_start:])
             PHR_PSDU = self._PHR_PSDU_scrambled
-
-            print(f"{self._SHR().size}")
-            print(f"{PSDU_start = }")
         # Generate output signal
         signal = np.concatenate([
             self._SHR(),
