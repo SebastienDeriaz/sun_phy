@@ -1,4 +1,5 @@
 from ..mr_ofdm.mr_ofdm_modulator import Mr_ofdm_modulator
+from .tests_tools import compare_arrays
 import numpy as np
 from os.path import join
 
@@ -36,12 +37,10 @@ def test_header():
         join(tables_path, "L.4.csv"), delimiter=',').astype(int)
 
     # Assert equality
-    assert np.array_equal(modulator._PHY_header,
-                          header_th), "Header doesn't match with table L.2"
-    assert np.array_equal(modulator._PHY_header_encoded,
-                          header_encoded_th), "Header doesn't match with table L.3"
-    assert np.array_equal(modulator._PHY_header_interleaved,
-                          header_interleaved_th), "Header doesn't match with table L.4"
+    
+    compare_arrays(modulator._PHY_header, header_th)
+    compare_arrays(modulator._PHY_header_encoded,header_encoded_th)
+    compare_arrays(modulator._PHY_header_interleaved, header_interleaved_th)
 
 
 def test_payload():
@@ -54,7 +53,7 @@ def test_payload():
     modulator = Mr_ofdm_modulator(**MODULATOR_SETTINGS)
 
     # Run complete modulator
-    modulator.messageToIQ(message_binary)
+    modulator.message_to_IQ(message_binary, binary=True)
 
     # Read the theorethical values from the norm
     payload_scrambled_th = np.genfromtxt(
@@ -65,12 +64,12 @@ def test_payload():
         join(tables_path, "L.9.csv"), delimiter=',').astype(int)
 
     # Assert equality
-    assert np.array_equal(modulator._payload_scrambled[:48], payload_scrambled_th[:48]) and np.array_equal(
-        modulator._payload_scrambled[-48:], payload_scrambled_th[-48:]), "Header doesn't match with table L.7"
-    assert np.array_equal(modulator._payload_encoded[:48], paylaod_encoded_th[:48]) and np.array_equal(
-        modulator._payload_encoded[-48:], paylaod_encoded_th[-48:]), "Header doesn't match with table L.8"
-    assert np.array_equal(modulator._payload_interleaved[:48], payload_interleaved_th[:48]) and np.array_equal(
-        modulator._payload_interleaved[-48:], payload_interleaved_th[-48:]), "Header doesn't match with table L.9"
+    compare_arrays(modulator._payload_scrambled[:48], payload_scrambled_th[:48])
+    compare_arrays(modulator._payload_scrambled[-48:], payload_scrambled_th[-48:])
+    compare_arrays(modulator._payload_encoded[:48], paylaod_encoded_th[:48])
+    compare_arrays(modulator._payload_encoded[-48:], paylaod_encoded_th[-48:])
+    compare_arrays(modulator._payload_interleaved[:48], payload_interleaved_th[:48])
+    compare_arrays(modulator._payload_interleaved[-48:], payload_interleaved_th[-48:])
 
 
 def test_time_domain():
@@ -89,7 +88,7 @@ def test_time_domain():
     LTF_I, LTF_Q = modulator._LTF()
     LTF = LTF_I + LTF_Q * 1j
     # Create complete signal
-    I, Q, _ = modulator.messageToIQ(message_binary)
+    I, Q, _ = modulator.message_to_IQ(message_binary, binary=True)
     IQ = I + Q * 1j
 
     # Load theoretical data
