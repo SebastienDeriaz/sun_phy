@@ -59,7 +59,8 @@ class Rate_one_half():
         out : ndarray
             Concatenated output (A and B interlaced)
         """
-        A = B = np.zeros_like(input_bits)
+        A = np.zeros_like(input_bits)
+        B = np.zeros_like(input_bits)
         out = np.zeros(input_bits.size * 2)
 
         for i, bit in enumerate(input_bits):
@@ -106,4 +107,4 @@ class Rate_three_quarter():
             out[4*i + 2] = A[1]
             out[4*i + 3] = B[2]
 
-        return out
+        return A, B, out
