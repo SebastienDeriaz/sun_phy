@@ -544,6 +544,17 @@ class Ofdm_modulator():
         """
         return self._pseudo_random_sequence.get_current_value()
 
+    def get_number_of_bits_per_symbol(self):
+        """
+        Return the number of bits used for each symbol (before spreading and modulation)
+
+        Returns
+        -------
+        output : int
+            Number of bits per symbol
+        """
+        return self._message_split_length
+        
     def _print_verbose(self, message: str):
         """
         Prints additionnal information if the verbose flag is True
