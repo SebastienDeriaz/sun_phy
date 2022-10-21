@@ -65,7 +65,7 @@ def to_binary_array(arr, binary=False):
     if isinstance(arr, list):
         arr_temp = np.asarray(arr, dtype=int)
     elif isinstance(arr, bytearray) or isinstance(arr, bytes):
-        arr_temp = np.asarray(list(arr_temp), dtype=int)
+        arr_temp = np.asarray(list(arr), dtype=int)
     elif isinstance(arr, np.ndarray):
         arr_temp = arr.astype(int)
 
