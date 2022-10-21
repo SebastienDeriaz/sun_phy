@@ -1,5 +1,7 @@
 import numpy as np
 
+from ..tools.errors import UnsupportedError
+
 from ..tools.bits import to_binary_array
 from .ofdm_modulator import Ofdm_modulator
 from ..tools.pn9 import Pn9
@@ -233,6 +235,21 @@ SCRAMBLING_SEED = {
 _Color0 = Fore.CYAN
 _ColorReset = Fore.RESET
 
+# Number of PHR symbols as a function of phyOFDMInterleaving and OFDM_Option
+PHR_N_SYMBOLS = {
+    0 : {
+        1 : 3,
+        2 : 6,
+        3 : 6,
+        4 : 6
+    },
+    1 : {
+        1 : 4,
+        2 : 8,
+        3 : 6,
+        4 : 6
+    }
+}
 
 class Mr_ofdm_modulator():
     def __init__(self, MCS=0, OFDM_Option=1, phyOFDMInterleaving=0, scrambler=0, verbose=False):
@@ -263,7 +280,7 @@ class Mr_ofdm_modulator():
             raise ValueError(
                 f"Invalid OFDM_Option ({OFDM_Option} instead of [1-4])")
         if not VALID_MCS_OFDM_COMBINATIONS[MCS][OFDM_Option-1]:
-            raise ValueError(
+            raise UnsupportedError(
                 f"Invalid MCS ({MCS})- OFDM Option combination ({OFDM_Option})")
         if not isinstance(phyOFDMInterleaving, int):
             raise ValueError("Invalid phyOFDMInterleaving type")
@@ -380,24 +397,25 @@ class Mr_ofdm_modulator():
 
         return I, Q
 
-    def _encoder(self, x):
+    def _encoder(self, x, rate):
         """
         Applies encoding to the given signal
         See 18.2.3.4
-
-        Rate is 1/2 or 3/4 depending on MCS value
 
         Parameters
         ----------
         x : ndarray
             Input signal
+        rate : str
+            '1/2' for rate one half
+            '3/4' for rate three quarters
 
         Returns
         -------
         x_encoded : ndarray
             Encoded signal
         """
-        if RATE[self._MCS] == "1/2":
+        if rate == "1/2":
             # Rate 1/2
             encoder = Rate_one_half()
         else:
@@ -526,23 +544,13 @@ class Mr_ofdm_modulator():
         mod_phy : Ofdm_modulator
             OFDM modulator used for the PHR
         """
+        padding = (FFT_SIZE[self._OFDM_Option] -
+                   ACTIVE_TONES[self._OFDM_Option]) // 2
 
         frame_length = message_length // 8
         self._print_verbose(Fore.LIGHTBLUE_EX + "Generating PHY header...")
-        self._PHY_header = PHR(rate=self._MCS, length=frame_length,
-                         scrambler=self._scrambler_seed_index, phyOFDMInterleaving=self._phyOFDMInterleaving).value()
-        self._print_verbose(Fore.LIGHTBLUE_EX + f"header : {self._PHY_header.size} bits")
-        # Encoding header
-        self._PHY_header_encoded = self._encoder(self._PHY_header)
-        self._print_verbose(Fore.LIGHTBLUE_EX + f"header after encoding : {self._PHY_header_encoded.size} bits")
-        # Interleaving header
-        self._PHY_header_interleaved = self._interleaver(
-            self._PHY_header_encoded, self._lowest_MCS)
-        self._print_verbose(Fore.LIGHTBLUE_EX + f"header after interleaving : {self._PHY_header_interleaved.size} bits")
-        # Apply OFDM modulation
-        # Sets the padding (one less on the right than on the left because of the DC tone)
-        padding = (FFT_SIZE[self._OFDM_Option] -
-                   ACTIVE_TONES[self._OFDM_Option]) // 2
+
+
         mod_phy = Ofdm_modulator(
             N_FFT=FFT_SIZE[self._OFDM_Option],
             modulation=MODULATION_AND_CODING_SCHEME[self._lowest_MCS],
@@ -553,6 +561,27 @@ class Mr_ofdm_modulator():
             pilots_indices=PILOTS_INDICES[self._OFDM_Option],
             pilots_values="pn9",
             CP=self._CP)
+
+        # Calculate the number of original bits (raw PHR) inside a symbol
+        # The number of symbols for the PHR is predetermined (See 18.2.1.3)
+        original_bits_per_symbol = int(mod_phy.get_number_of_bits_per_symbol() * self._rate)
+        # Define the PHR length
+        phr_length = original_bits_per_symbol * PHR_N_SYMBOLS[self._phyOFDMInterleaving][self._OFDM_Option]
+        # Create the PHR
+        self._PHY_header = PHR(rate=self._MCS, length=frame_length,
+                         scrambler=self._scrambler_seed_index, phr_length=phr_length).value()
+        self._print_verbose(Fore.LIGHTBLUE_EX + f"header : {self._PHY_header.size} bits")
+        # Encoding header
+        self._PHY_header_encoded = self._encoder(self._PHY_header, rate=RATE[self._lowest_MCS])
+        self._print_verbose(Fore.LIGHTBLUE_EX + f"header after encoding : {self._PHY_header_encoded.size} bits")
+        # Interleaving header
+        self._PHY_header_interleaved = self._interleaver(
+            self._PHY_header_encoded, self._lowest_MCS)
+        self._print_verbose(Fore.LIGHTBLUE_EX + f"header after interleaving : {self._PHY_header_interleaved.size} bits")
+        # Apply OFDM modulation
+        # Sets the padding (one less on the right than on the left because of the DC tone)
+        
+        
 
         PHR_I, PHR_Q, _ = mod_phy.messageToIQ(self._PHY_header_interleaved, pad=False)
         self._print_verbose(Fore.LIGHTBLUE_EX + f"header complex (I+jQ) signal is {PHR_I.size} samples" + Fore.RESET)
@@ -582,7 +611,7 @@ class Mr_ofdm_modulator():
         payload_pad = self._padding(message)
         self._payload_scrambled = self._scrambler(payload_pad)
         # Encoding header
-        self._payload_encoded = self._encoder(self._payload_scrambled)
+        self._payload_encoded = self._encoder(self._payload_scrambled, rate=RATE[self._MCS])
         # Interleaving header
         self._payload_interleaved = self._interleaver(
             self._payload_encoded, self._MCS)
@@ -608,7 +637,7 @@ class Mr_ofdm_modulator():
 
         return PAYLOAD_I, PAYLOAD_Q
 
-    def messageToIQ(self, message, binary=False):
+    def message_to_IQ(self, message, binary):
         """
         Encodes the given message with MR-OFDM modulator
 
