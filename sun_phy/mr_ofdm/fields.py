@@ -73,7 +73,7 @@ def HCS_calculation(input_array):
 
 
 class PHR():
-    def __init__(self, rate, length, scrambler, phyOFDMInterleaving):
+    def __init__(self, rate, length, scrambler, phr_length):
         """
         PHY Header for MR-OFDM
         See 18.2.1.3 in 802.15.4g specification
@@ -86,10 +86,8 @@ class PHR():
             6-16 (L10-L0) Frame length. Total number of octets contained in the PSDU (prior to FEC encoding)
         scrambler : int
             19-20 (S1-S0) Scrambler  Scrambling seed (0 - 3)
-        phyOFDMInterleaving : int or bool
-            Type of modulation, this affects the length of the PHR
-            phyOFDMInterleaving = True  : 48 bits
-            phyOFDMInterleaving = False : 36 bits
+        phr_length : int
+            Length of the PHR (to match the number of symbols wanted)
         """
         # Check values and types
         if not isinstance(rate, int):
@@ -106,10 +104,10 @@ class PHR():
             raise ValueError(f"Invalid scrambler value {scrambler}")
 
         # Store values
+        self._phr_length = phr_length
         self._RA = rate
         self._L = length
         self._S = scrambler
-        self._phyOFDMInterleaving = phyOFDMInterleaving
 
     def value(self):
         """
@@ -119,13 +117,16 @@ class PHR():
         -------
         output : list of bytes
         """
-        length = 48 if self._phyOFDMInterleaving else 36
         # PHR : 36
-        # PAD : 12
-        output = np.zeros([length], dtype=np.uint8)
+        # the rest is padded with 0s
+        output = np.zeros([self._phr_length], dtype=np.uint8)
         # Build the array in correct order (LSB first)
         # This is great because it is the order in which it will be sent
         # as well as the order in which it's "logical" to build it (indices)
+
+        # TODO : Check if RA is the value of MCS (MCSx => x)
+        # or if it is the identifier (MCS1, Option3 => 0)
+        # See table 68j
         output[RATE_BITS] = _uintarr(self._RA, bits=5)
         output[FRAME_LENGTH_BITS] = _uintarr(self._L, bits=11)
         output[SCRAMBLER_BITS] = _uintarr(self._S, bits=2)
