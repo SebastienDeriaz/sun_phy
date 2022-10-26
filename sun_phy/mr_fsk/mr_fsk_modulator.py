@@ -343,7 +343,7 @@ class Mr_fsk_modulator:
 
         return output
 
-    def message_to_bitstream(self, message, binary=False):
+    def message_to_IQ(self, message, binary=False):
         """
         Encodes the given message with MR-FSK modulator
 
@@ -402,7 +402,7 @@ class Mr_fsk_modulator:
 
         return signal, f
 
-    def mode_switch_bitstream(self, modeSwitchParameterEntry, new_mode_fec):
+    def mode_switch_to_IQ(self, modeSwitchParameterEntry, new_mode_fec):
         """
 
         new_mode_fec : bool

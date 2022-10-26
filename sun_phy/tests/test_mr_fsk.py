@@ -35,4 +35,4 @@ def test_parameters():
                                     phyFSKScramblePSDU=phyFSKScramblePSDU,
                                     phyFSKFECInterleavingRSC=phyFSKFECInterleavingRSC)
                                 
-                                modulator.message_to_bitstream(b'test_message', binary=False)
+                                modulator.message_to_IQ(b'test_message', binary=False)

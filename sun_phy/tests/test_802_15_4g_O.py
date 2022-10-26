@@ -118,7 +118,7 @@ def test_Example1_O_2_4():
 
     PPDU_th = np.genfromtxt(join(tables_path, 'O.2.4.csv'), delimiter=',').astype(int)
     
-    PPDU, _ = modulator.message_to_bitstream(PSDU, binary=True)
+    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
 
     compare_arrays(PPDU, PPDU_th)
 
@@ -152,7 +152,7 @@ def test_Example2_O_3_5():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[2])
 
-    PPDU, _ = modulator.message_to_bitstream(PSDU, binary=True)
+    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
 
     PPDU_th = np.genfromtxt(join(tables_path, 'O.3.5.csv'), delimiter=',').astype(int)
 
@@ -186,7 +186,7 @@ def test_Example3_O_4_5():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[3])
 
-    modulator.message_to_bitstream(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
 
     PHR_PSDU_T_P = modulator._PHR_PSDU_encoded
 
@@ -200,7 +200,7 @@ def test_Example3_O_4_6():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[3])
 
-    modulator.message_to_bitstream(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
 
     interleaved = modulator._PHR_PSDU_interleaved
 
@@ -214,7 +214,7 @@ def test_Example3_O_4_7():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[3])
 
-    modulator.message_to_bitstream(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
 
     interleaved = modulator._PHR_PSDU_scrambled
 
@@ -228,7 +228,7 @@ def test_Example3_O_4_8():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[3])
 
-    PPDU, _ = modulator.message_to_bitstream(PSDU, binary=True)
+    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
     PPDU_th = np.genfromtxt(join(tables_path, 'O.4.8.csv'), delimiter=',').astype(int)
 
     compare_arrays(PPDU, PPDU_th)
@@ -261,7 +261,7 @@ def test_Example4_O_5_4():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[4])
 
-    modulator.message_to_bitstream(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
 
     PHR_PSDU_T_P = modulator._PHR_PSDU_encoded
 
@@ -275,7 +275,7 @@ def test_Example4_O_5_5():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[4])
 
-    modulator.message_to_bitstream(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
 
     interleaved = modulator._PHR_PSDU_interleaved
 
@@ -289,7 +289,7 @@ def test_Example4_O_5_6():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[4])
 
-    PPDU, _ = modulator.message_to_bitstream(PSDU, binary=True)
+    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
     PPDU_th = np.genfromtxt(join(tables_path, 'O.5.6.csv'), delimiter=',').astype(int)
 
     compare_arrays(PPDU, PPDU_th)
@@ -322,7 +322,7 @@ def test_Example5_O_6_4():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[5])
 
-    PPDU, _ = modulator.message_to_bitstream(PSDU, binary=True)
+    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
     PPDU_th = np.genfromtxt(join(tables_path, 'O.6.4.csv'), delimiter=',').astype(int)
 
     compare_arrays(PPDU, PPDU_th)
@@ -355,7 +355,7 @@ def test_Example6_O_7_5():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[6])
 
-    modulator.message_to_bitstream(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
 
     PHR_PSDU_T_P = modulator._PHR_PSDU_encoded
 
@@ -369,7 +369,7 @@ def test_Example6_O_7_6():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[6])
 
-    modulator.message_to_bitstream(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
 
     interleaved = modulator._PHR_PSDU_interleaved
 
@@ -383,7 +383,7 @@ def test_Example6_O_7_7():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[6])
 
-    modulator.message_to_bitstream(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
 
     interleaved = modulator._PHR_PSDU_scrambled
 
@@ -398,7 +398,7 @@ def test_Example6_O_7_8():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[6])
 
-    PPDU, _ = modulator.message_to_bitstream(PSDU, binary=True)
+    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
     PPDU_th = np.genfromtxt(join(tables_path, 'O.7.8.csv'), delimiter=',').astype(int)
 
     compare_arrays(PPDU, PPDU_th)

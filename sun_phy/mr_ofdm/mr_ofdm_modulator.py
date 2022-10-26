@@ -454,15 +454,18 @@ class Mr_ofdm_modulator():
             # interleaving depth of SF
             # See table
             N_cbps = int(np.round(N_FFT * N_bpsc * (3/4)))
-        # 06.05.2022, testing here (instead of inside the else:)
+
         N_row = 12 // SF
 
         k = np.arange(N_cbps, dtype=int)
         i = ((N_cbps / N_row) * (np.mod(k, N_row)) +
              np.floor(k / N_row)).astype(int)
 
-        s = np.max([1, N_bpsc/2])
+        s = int(np.max([1, N_bpsc/2])) # s would be an integer anyway
+
         # We use i as an index here, so we store a copy of the previous one
+        # This second permutation does something only when s > 1 (MCS >= 5)
+        # otherwise the expression becomes j = (i + 0) so j=i
         i_store = i.copy()
         i = np.arange(N_cbps, dtype=int)
         j = (s * np.floor(i / s) + np.mod(i + N_cbps -
