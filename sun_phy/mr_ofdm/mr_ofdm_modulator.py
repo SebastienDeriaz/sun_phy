@@ -4,7 +4,7 @@ from ..tools.errors import UnsupportedError
 
 from ..tools.bits import to_binary_array
 from .ofdm_modulator import Ofdm_modulator
-from ..tools.pn9 import Pn9
+from ..tools import operations
 from .rate_encoder import Rate_one_half, Rate_three_quarter
 from .fields import PHR, TAIL_BITS
 
@@ -506,29 +506,6 @@ class Mr_ofdm_modulator():
         output = np.block([message, np.zeros(N_PAD), np.zeros(N_TAIL_BITS)])
         return output
 
-    def _scrambler(self, message):
-        """
-        Applies scrambling to the message. The message is the PHR with pad and tail bits
-
-        Parameters
-        ----------
-        message : ndarray
-            The message to scrambler
-
-        Returns
-        -------
-        output : ndarray
-            Scrambled message
-        """
-        N_TAIL_BITS = 6
-        enc = Pn9(seed=SCRAMBLING_SEED[self._scrambler_seed_index])
-        sequence = np.array(enc.nextN(message.size), dtype=np.uint8)
-        output = np.bitwise_xor(sequence, message.astype(np.uint8))
-
-        # Reset the tail bits to 0
-        output[-N_TAIL_BITS-self._N_PAD:-self._N_PAD] = 0
-        return output
-
     def _PHR(self, message_length):
         """
         Generate a PHR
@@ -612,7 +589,12 @@ class Mr_ofdm_modulator():
 
         # Scrambler
         payload_pad = self._padding(message)
-        self._payload_scrambled = self._scrambler(payload_pad)
+
+        N_TAIL_BITS = 6
+        
+        self._payload_scrambled = operations.scrambler(payload_pad, pn9_seed=SCRAMBLING_SEED[self._scrambler_seed_index])
+        # Reset the tail bits at 0
+        self._payload_scrambled[-N_TAIL_BITS-self._N_PAD:-self._N_PAD] = 0
         # Encoding header
         self._payload_encoded = self._encoder(self._payload_scrambled, rate=RATE[self._MCS])
         # Interleaving header
