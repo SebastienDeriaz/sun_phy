@@ -4,8 +4,8 @@ MR-FSK Modulator
 
 import numpy as np
 from enum import Enum
-from ..tools.pn9 import Pn9
 from ..tools.bits import from_bitstring, to_binary_array
+from ..tools import operations
 
 from colorama import Fore
 
@@ -320,29 +320,6 @@ class Mr_fsk_modulator:
 
         return output
 
-    def _scrambler(self, PSDU: np.ndarray):
-        """
-        Applies scrambler (data whitening) to the PSDU
-
-        Parameters
-        ----------
-        PSDU : ndarray
-            Bitstream of the PSDU
-
-        Returns
-        -------
-        output : ndarray
-            Bitstream of the whitened data
-        """
-
-        pn9 = Pn9()
-
-        pn9_sequence = np.array(pn9.nextN(PSDU.size))
-
-        output = np.logical_xor(pn9_sequence, PSDU)
-
-        return output
-
     def message_to_IQ(self, message, binary=False):
         """
         Encodes the given message with MR-FSK modulator
@@ -390,7 +367,7 @@ class Mr_fsk_modulator:
 
             self._PHR_PSDU_scrambled = PHR_PSDU.copy()
 
-            self._PHR_PSDU_scrambled[PSDU_start:] = self._scrambler(
+            self._PHR_PSDU_scrambled[PSDU_start:] = operations.scrambler(
                 self._PHR_PSDU_scrambled[PSDU_start:])
             PHR_PSDU = self._PHR_PSDU_scrambled
         # Generate output signal
