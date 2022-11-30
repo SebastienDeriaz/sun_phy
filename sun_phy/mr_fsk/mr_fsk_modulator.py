@@ -56,7 +56,7 @@ NRNSC_TAIL_BITS = np.array([0, 0, 0])
 
 
 class Mr_fsk_modulator:
-    def __init__(self, phyMRFSKSFD, phyFSKPreambleLength, modulation, phyFSKFECEnabled, phyFSKFECScheme, macFCSType, phyFSKScramblePSDU, phyFSKFECInterleavingRSC):
+    def __init__(self, phyMRFSKSFD : int, modulation : str, phyFSKFECEnabled : bool, phyFSKFECScheme : int, macFCSType : int, phyFSKScramblePSDU : bool, phyFSKFECInterleavingRSC : bool, phyFSKPreambleLength : int = 4):
         """
         Creates an instance of a MR-FSK modulator
 
@@ -64,8 +64,6 @@ class Mr_fsk_modulator:
         ----------
         phyMRFSKSFD : int
             Selection of the SFD group (See table 131 of 802.15.4g)
-        phyFSKPreambleLength : int
-            Length of the preamble
         modulation : str
             Modulation type : "2FSK" or "4FSK"
         phyFSKFECEnabled : bool
@@ -77,8 +75,10 @@ class Mr_fsk_modulator:
             FCS Type describing the length of transmitted FCS.
         phyFSKScramblePSDU : bool
             Enable (True) or disable (False) the whitening of the PSDU
-        phyFSKFECInterleavingRSC : bool
+        phyFSKFECInterleavingRSC : bool or int
             Enable (True) interleaving for RSC or disable (False)
+        phyFSKPreambleLength : int
+            Length of the preamble (default to 4)
 
         """
         # Checks
@@ -87,13 +87,6 @@ class Mr_fsk_modulator:
                 raise ValueError("phyMRFSKSFD should be 0 or 1")
         else:
             raise TypeError("Invalid phyMRFSKSFD type. It should be int")
-
-        if isinstance(phyFSKPreambleLength, int):
-            if not (4 <= phyFSKPreambleLength <= 1000):
-                raise ValueError(
-                    "phyFSKPreambleLength value is invalid. The range is 4-1000 (See Table 71)")
-        else:
-            raise TypeError("phyFSKPreambleLength must be an integer")
 
         if isinstance(modulation, str):
             if modulation not in ["2FSK", "4FSK"]:
@@ -115,11 +108,18 @@ class Mr_fsk_modulator:
         elif macFCSType not in [0, 1]:
             raise ValueError("FCS_length should be 0 or 1")
 
-        if not isinstance(phyFSKScramblePSDU, bool):
-            raise TypeError("phyFSKScramblePSDU should be of type bool")
+        if not (isinstance(phyFSKScramblePSDU, bool) or isinstance(phyFSKScramblePSDU, int)):
+            raise TypeError("phyFSKScramblePSDU should be of type bool or int")
 
-        if not isinstance(phyFSKFECInterleavingRSC, bool):
-            raise TypeError("phyFSKFECInterleavingRSC should be of type bool")
+        if not (isinstance(phyFSKFECInterleavingRSC, bool) or isinstance(phyFSKFECInterleavingRSC, int)):
+            raise TypeError("phyFSKFECInterleavingRSC should be of type bool or int")
+
+        if isinstance(phyFSKPreambleLength, int):
+            if not (4 <= phyFSKPreambleLength <= 1000):
+                raise ValueError(
+                    f"phyFSKPreambleLength value ({phyFSKPreambleLength}) is invalid. The range is 4-1000 (See Table 71)")
+        else:
+            raise TypeError("phyFSKPreambleLength must be an integer")
 
         self._macFCSType = macFCSType
         self._phyFSKFECEnabled = phyFSKFECEnabled
