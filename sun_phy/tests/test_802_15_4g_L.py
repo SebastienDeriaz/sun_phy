@@ -111,3 +111,44 @@ def test_time_domain():
     IQ_error = np.var(data_th - IQ)
     assert IQ_error < ERROR_THRESHOLD, f"signal error is outside bounds : {IQ_error}"
 
+def test_time_domain_from_bytes():
+    """
+    Tests if the time domain signal is valid (STF, then LTF, then the complete signal)
+    """
+
+    print(f"message binary : {message_binary}")
+    # Instanciate modulator
+    modulator = Mr_ofdm_modulator(**MODULATOR_SETTINGS)
+
+    ERROR_THRESHOLD = 1e-6
+
+    # Create STF
+    STF_I, STF_Q = modulator._STF()
+    STF = STF_I + STF_Q * 1j
+    # Create LTF
+    LTF_I, LTF_Q = modulator._LTF()
+    LTF = LTF_I + LTF_Q * 1j
+    # Create complete signal
+    I, Q, _ = modulator.message_to_IQ(message, binary=False)
+    IQ = I + Q * 1j
+
+    # Load theoretical data
+    data_th = np.genfromtxt(join(tables_path, 'L.14.csv'),
+                            delimiter=',', dtype=float)
+
+    data_th = data_th[:, 0] + data_th[:, 1] * 1j
+
+    # Check STF
+    STF_th = data_th[:STF.size]
+    STF_error = np.var(STF_th - STF)
+    assert STF_error < ERROR_THRESHOLD, f"STF error is outside bounds : {STF_error}"
+
+    # Check LTF
+    LTF_th = data_th[STF.size:STF.size + LTF.size]
+    LTF_error = np.var(LTF_th - LTF)
+    assert LTF_error < ERROR_THRESHOLD, f"LTF error is outside bounds : {LTF_error}"
+
+    # Check complete signal
+    IQ_error = np.var(data_th - IQ)
+    assert IQ_error < ERROR_THRESHOLD, f"signal error is outside bounds : {IQ_error}"
+
