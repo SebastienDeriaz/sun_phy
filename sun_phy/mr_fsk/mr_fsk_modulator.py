@@ -35,7 +35,6 @@ SFD = {
 PREAMBLE_SEQUENCE = {
     Modulation.FSK2: np.tile(np.array([0, 1]), 4),
     Modulation.FSK4: np.tile(np.array([0, 1, 1, 1]), 4)
-
 }
 
 PHR_LENGTH = 2
@@ -56,12 +55,16 @@ NRNSC_TAIL_BITS = np.array([0, 0, 0])
 
 
 class Mr_fsk_modulator:
-    def __init__(self, phyMRFSKSFD, phyFSKPreambleLength, modulation, phyFSKFECEnabled, phyFSKFECScheme, macFCSType, phyFSKScramblePSDU, phyFSKFECInterleavingRSC):
+    def __init__(self, symbolRate : int, FSKModulationIndex : int, phyMRFSKSFD : int, modulation : str, phyFSKFECEnabled : bool, phyFSKFECScheme : int, macFCSType : int, phyFSKScramblePSDU : bool, phyFSKFECInterleavingRSC : bool, phyFSKPreambleLength : int = 4):
         """
         Creates an instance of a MR-FSK modulator
 
         Parameters
         ----------
+        symbolRate : int
+            Number of symbols per second, if a float is supplied it will be converted to int
+        FSKModulationIndex : float
+            FSK Modulation index
         phyMRFSKSFD : int
             Selection of the SFD group (See table 131 of 802.15.4g)
         phyFSKPreambleLength : int
@@ -82,6 +85,18 @@ class Mr_fsk_modulator:
 
         """
         # Checks
+        if isinstance(symbolRate, float):
+            symbolRate = int(symbolRate)
+        elif not isinstance(symbolRate, int):
+            raise TypeError("symbolRate must be an integer")
+        if symbolRate <= 0:
+            raise ValueError("symbolRate must be a positive integer value")
+
+        if not (isinstance(FSKModulationIndex, float) or isinstance(FSKModulationIndex, int)):
+            raise TypeError("FSKModulationIndex must be a number")
+        if not (0.25 <= FSKModulationIndex <= 2.5):
+            raise ValueError(f"FSKModulationIndex ({FSKModulationIndex}) must be between 0.25 and 2.5")
+
         if isinstance(phyMRFSKSFD, int):
             if phyMRFSKSFD not in [0, 1]:
                 raise ValueError("phyMRFSKSFD should be 0 or 1")
@@ -115,12 +130,16 @@ class Mr_fsk_modulator:
         elif macFCSType not in [0, 1]:
             raise ValueError("FCS_length should be 0 or 1")
 
-        if not isinstance(phyFSKScramblePSDU, bool):
+        if isinstance(phyFSKScramblePSDU, int):
+            phyFSKScramblePSDU = bool(phyFSKScramblePSDU)
+        elif not isinstance(phyFSKScramblePSDU, bool):
             raise TypeError("phyFSKScramblePSDU should be of type bool")
 
         if not isinstance(phyFSKFECInterleavingRSC, bool):
             raise TypeError("phyFSKFECInterleavingRSC should be of type bool")
 
+        self._symbol_rate = symbolRate
+        self._FSKModulationIndex = FSKModulationIndex
         self._macFCSType = macFCSType
         self._phyFSKFECEnabled = phyFSKFECEnabled
         self._phyMRFSKSFD = phyMRFSKSFD
@@ -219,7 +238,7 @@ class Mr_fsk_modulator:
 
         return signal
 
-    def _FEC(self, data):
+    def _FEC(self, data, tail = True, pad = True):
         """
         Apply FEC encoding to the data (PHR + PSDU) and appends tail and pad bits
 
@@ -227,6 +246,10 @@ class Mr_fsk_modulator:
         ----------
         data : ndarray
             Bitstream of the message to encode
+        tail : bool
+            Enable tail (True by default)
+        pad  : bool
+            Enable pad (True by default)
         """
 
         def M_iter_RSC(M, bi):
@@ -278,17 +301,26 @@ class Mr_fsk_modulator:
 
         # Add tails bits and pad bits
         TAIL_BITS = RSC_TAIL_BITS[M] if self._phyFSKFECScheme else NRNSC_TAIL_BITS
+        if tail:
+            for bi in TAIL_BITS:
+                if self._phyFSKFECScheme:
+                    M, ui0, ui1 = M_iter_RSC(M, bi)
+                else:
+                    M, ui0, ui1 = M_iter_NRNSC(M, bi)
 
-        for bi in np.concatenate([TAIL_BITS, PAD_BITS]):
-            if self._phyFSKFECScheme:
-                M, ui0, ui1 = M_iter_RSC(M, bi)
-            else:
-                M, ui0, ui1 = M_iter_NRNSC(M, bi)
+                encoded_PHR_PSDU.append(ui1)
+                encoded_PHR_PSDU.append(ui0)
+        if pad:
+            for bi in PAD_BITS:
+                if self._phyFSKFECScheme:
+                    M, ui0, ui1 = M_iter_RSC(M, bi)
+                else:
+                    M, ui0, ui1 = M_iter_NRNSC(M, bi)
 
-            encoded_PHR_PSDU.append(ui1)
-            encoded_PHR_PSDU.append(ui0)
+                encoded_PHR_PSDU.append(ui1)
+                encoded_PHR_PSDU.append(ui0)
 
-        return np.array(encoded_PHR_PSDU)
+        return np.array(encoded_PHR_PSDU).astype(np.uint8)
 
     def _interleaver(self, data):
         """
@@ -320,6 +352,73 @@ class Mr_fsk_modulator:
 
         return output
 
+    def _FSKModulator(self, message : np.ndarray, samplesPerSymbol : int):
+        """
+        FSK modulation of the given message.
+
+        # 2FSK modulation : 
+            the symbols are placed at +- df.
+            0 -> -fdev
+            1 -> +fdev
+        
+        # 4FSK modulation :
+            the symbols are placed at +- df and +- df/3
+
+            01 -> -fdev
+            00 -> -fdev/3
+            10 -> +fdev/3
+            11 -> +fdev
+
+        Parameters
+        ----------
+        message : np.ndarray
+            Message bitstream
+        samplesPerSymbol : int
+            Number of IQ samples per symbol
+
+        Returns
+        -------
+        I : np.ndarray
+            Real part
+        Q : np.ndarray
+            Imaginary part
+        f : float
+            Sampling frequency
+        """
+        # Frequency deviation (from the center)
+        fdev = self._symbol_rate * self._FSKModulationIndex / 2
+
+        mod = {
+            # 2FSK
+            '0' : -fdev,
+            '1' : +fdev,
+            # 4FSK
+            '01' : -fdev,
+            '00' : -fdev/3,
+            '10' : +fdev/3,
+            '11' : +fdev
+        }
+
+        step = 1 if self._modulation == Modulation.FSK2 else 2
+        # Create a frequency deviation signal
+        freqs = []
+        for val in message.reshape(-1,step):
+            key = ''.join([str(x) for x in val])
+            freqs.append(mod[key])
+
+        # Generate I and Q from the frequency deviation
+        
+        # Symbol period
+        Ts = 1/self._symbol_rate
+
+        f = np.repeat(freqs, samplesPerSymbol)
+        dt = (Ts / samplesPerSymbol)
+        t = np.arange(0, dt * f.size, dt)
+
+        IQ = np.exp(2*np.pi*f*1j*t)
+
+        return IQ.real, IQ.imag, 1/dt
+
     def message_to_IQ(self, message, binary=False):
         """
         Encodes the given message with MR-FSK modulator
@@ -341,22 +440,22 @@ class Mr_fsk_modulator:
         """
         message_bin = to_binary_array(message, binary)
 
-        PHR_PSDU = np.concatenate(
+        self._PHR_PSDU = np.concatenate(
             [self._PHR(message_bin.size // 8), message_bin])
 
         # Symbol_length is the number of bits coded for a single symbol. If FEC is disabled, there's one bit per symbol. If FEC is enabled, there's two bits per symbol
 
         if self._phyFSKFECEnabled:
             symbol_length = 2
-            self._PHR_PSDU_encoded = self._FEC(PHR_PSDU)
+            self._PHR_PSDU_encoded = self._FEC(self._PHR_PSDU)
 
             if self._phyFSKFECInterleavingRSC:
                 self._PHR_PSDU_interleaved = self._interleaver(
                     self._PHR_PSDU_encoded)
-                PHR_PSDU = self._PHR_PSDU_interleaved
+                self._PHR_PSDU = self._PHR_PSDU_interleaved
             else:
                 # Data is unchanged (encoding only)
-                PHR_PSDU = self._PHR_PSDU_encoded
+                self._PHR_PSDU = self._PHR_PSDU_encoded
         else:
             # Do not change anything
             symbol_length = 1
@@ -365,19 +464,22 @@ class Mr_fsk_modulator:
         if self._phyFSKScramblePSDU:
             PSDU_start = PHR_LENGTH * symbol_length * 8
 
-            self._PHR_PSDU_scrambled = PHR_PSDU.copy()
+            self._PHR_PSDU_scrambled = self._PHR_PSDU.copy()
 
             self._PHR_PSDU_scrambled[PSDU_start:] = operations.scrambler(
                 self._PHR_PSDU_scrambled[PSDU_start:])
-            PHR_PSDU = self._PHR_PSDU_scrambled
+            self._PHR_PSDU = self._PHR_PSDU_scrambled
         # Generate output signal
-        signal = np.concatenate([
+        
+        self._binarySignal = np.concatenate([
             self._SHR(),
-            PHR_PSDU
+            self._PHR_PSDU
         ])
-        f = 0
 
-        return signal, f
+        # TODO : change this
+        samplesPerSymbol = 20
+
+        return  self._FSKModulator(self._binarySignal, samplesPerSymbol)
 
     def mode_switch_to_IQ(self, modeSwitchParameterEntry, new_mode_fec):
         """
