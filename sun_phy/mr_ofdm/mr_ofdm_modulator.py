@@ -298,6 +298,7 @@ class Mr_ofdm_modulator():
         self._MCS = MCS
         # Lowest possible MCS value for the current OFDM option (for sending PHR)
         self._lowest_MCS = LOWEST_MCS_VALUE[OFDM_Option]
+        self._N_FFT = FFT_SIZE[self._OFDM_Option]
 
         self._N_cbps = DATA_TONES[OFDM_Option]
         #self._N_dbps = DATA_TONES[OFDM_Option] * N_BPSC[self._MCS] # this is wrong
@@ -443,17 +444,17 @@ class Mr_ofdm_modulator():
         x_interleaved : ndarray
             Interleaved signal
         """
+        # SF and N_bpsc depend on the current MCS (might different for PHR and Payload)
         SF = FREQUENCY_SPREADING[MCS]
-        N_FFT = FFT_SIZE[self._OFDM_Option]
         N_bpsc = N_BPSC[MCS]
 
         if self._phyOFDMInterleaving == 0:
             # interleaving depth of 1
-            N_cbps = int(np.round(N_FFT * N_bpsc / SF * (3/4)))
+            N_cbps = int(np.round(self._N_FFT * N_bpsc / SF * (3/4)))
         else:
             # interleaving depth of SF
             # See table
-            N_cbps = int(np.round(N_FFT * N_bpsc * (3/4)))
+            N_cbps = int(np.round(self._N_FFT * N_bpsc * (3/4)))
 
         N_row = 12 // SF
 
@@ -471,11 +472,11 @@ class Mr_ofdm_modulator():
         j = (s * np.floor(i / s) + np.mod(i + N_cbps -
              np.floor(N_row * i / N_cbps), s)).astype(int)
 
-        ij = i_store[j]
+        self._ij = i_store[j]
 
         x_interleaved = np.zeros_like(x)
         for s in range(x.size // k.size):
-            x_interleaved[s*k.size + ij] = x[s*k.size + k]
+            x_interleaved[s*k.size + self._ij] = x[s*k.size + k]
 
         return x_interleaved
 
