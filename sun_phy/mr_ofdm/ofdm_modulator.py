@@ -111,15 +111,15 @@ class Ofdm_modulator():
 
             self._N_pilots = pilots_indices.shape[0]
 
-            if pilots_values == "pn9":
+            if isinstance(pilots_values, str) and pilots_values == "pn9":
                 # Use PN9 sequence
                 self._use_pn9_sequence = True
             else:
                 self._use_pn9_sequence = False
                 # Check if an array is given for pilots values and it matches the size of pilots_indices
-                if pilots_values.ndim > 0 and pilots_values.shape[0] == pilots_indices.shape[0]:
+                if pilots_values.ndim > 0 and pilots_values.shape[0] != pilots_indices.shape[0]:
                     raise ValueError(
-                        f"Invalid pilots_indices dimension ({pilots_indices.ndim} for shape {pilots_indices.shape})")
+                        f"pilots_indices and pilots_values do not match ({pilots_values.shape[0]} != {pilots_indices.shape[0]})")
             # Store the values
             self._pilots_values = pilots_values
             # Reshape to 2D (so that the rows always represent the pilots positions)
@@ -321,6 +321,8 @@ class Ofdm_modulator():
         # Create a BPSK modulator for PN9 sequence (if used)
         bpsk_modulator = get_modulator('BPSK')
 
+        self._pilots_values_index = 0
+
         # Adding pilots
         if self._N_pilots > 0:
             # Iterate over the symbols
@@ -386,6 +388,7 @@ class Ofdm_modulator():
         """
         self._print_verbose(f"Applying iFFT to the signal...")
         # ifftshift is very important since the spectrum was created "how it looks" but the ifft does 0-> Fs/2 -> -Fs/2 -> 0-dF
+        self._subcarriers = channels.squeeze()
         signal = ifft(ifftshift(channels, axes=0), axis=0, norm='ortho')
         # Time vector (and corresponding sampling period)
         deltaF = 2*self._BW / (channels.shape[0]-1)
