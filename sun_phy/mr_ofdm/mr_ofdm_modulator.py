@@ -300,7 +300,10 @@ class Mr_ofdm_modulator():
         self._lowest_MCS = LOWEST_MCS_VALUE[OFDM_Option]
         self._N_FFT = FFT_SIZE[self._OFDM_Option]
 
-        self._N_cbps = DATA_TONES[OFDM_Option]
+        #self._N_cbps = DATA_TONES[OFDM_Option] # This is wrong
+        self._N_cbps_lowest_mcs = DATA_TONES[OFDM_Option] * N_BPSC[self._lowest_MCS]
+        self._N_cbps = DATA_TONES[OFDM_Option] * N_BPSC[self._MCS]
+
         #self._N_dbps = DATA_TONES[OFDM_Option] * N_BPSC[self._MCS] # this is wrong
         self._rate = 1/2 if RATE[self._MCS] == "1/2" else 3/4
         self._N_dbps = int(self._N_cbps * self._rate)
@@ -497,14 +500,15 @@ class Mr_ofdm_modulator():
             The padded message
         """
         N_TAIL_BITS = 6
-        length = message.size // 8 # number of octets
         # See P.90
-        N_SYM = np.ceil((8 * length + 6) / self._N_dbps)
+        #N_SYM = int(np.ceil((8 * length + 6) / self._N_dbps))
+        N_SYM = int(np.ceil((message.size + N_TAIL_BITS) / self._N_dbps))
         N_DATA = N_SYM * self._N_dbps
-        N_PAD = int(N_DATA - (8 * length + 6))
+        N_PAD = int(N_DATA - (message.size + N_TAIL_BITS))
         self._N_PAD = N_PAD
-        self._print_verbose(f"Adding {N_PAD} padding bits and {N_TAIL_BITS} tail bits to the message")
         output = np.block([message, np.zeros(N_PAD), np.zeros(N_TAIL_BITS)])
+        self._print_verbose(f"Adding {N_PAD} padding bits (0s) and {N_TAIL_BITS} tail bits (0s) to the message ({message.size} + {N_PAD} + {N_TAIL_BITS} -> {output.size})")
+        self._print_verbose(f"Message will use {N_SYM} symbols ({self._N_dbps} data bits per symbol)")
         return output
 
     def _PHR(self, message_length):
@@ -619,7 +623,7 @@ class Mr_ofdm_modulator():
             initial_pilot_set = mod_phy.get_pilot_set_index(),
             initial_pn9_seed = mod_phy.get_pn9_value())
 
-        PAYLOAD_I, PAYLOAD_Q, _ = mod_payload.messageToIQ(self._payload_interleaved, pad=True)
+        PAYLOAD_I, PAYLOAD_Q, _ = mod_payload.messageToIQ(self._payload_interleaved, pad=False)
 
         return PAYLOAD_I, PAYLOAD_Q
 
