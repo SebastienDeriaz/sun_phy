@@ -68,6 +68,10 @@ def to_binary_array(arr, binary=False):
         arr_temp = np.asarray(list(arr), dtype=int)
     elif isinstance(arr, np.ndarray):
         arr_temp = arr.astype(int)
+    elif isinstance(arr, str):
+        raise TypeError("Cannot use string type, please use a bytearray")
+    else:
+        raise TypeError(f"Invalid input array type : {type(arr)}")
 
     # Phase 2 : Convert to bits (if necessary)
     if not binary:
