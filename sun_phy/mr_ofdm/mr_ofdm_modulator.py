@@ -571,6 +571,8 @@ class Mr_ofdm_modulator():
         PHR_I, PHR_Q, _ = mod_phy.messageToIQ(self._PHY_header_interleaved, pad=False)
         self._print_verbose(Fore.LIGHTBLUE_EX + f"header complex (I+jQ) signal is {PHR_I.size} samples" + Fore.RESET)
 
+        self._phr_subcarriers = mod_phy._subcarriers
+
         return PHR_I, PHR_Q, mod_phy
     
     def _payload(self, message, mod_phy):
@@ -593,11 +595,11 @@ class Mr_ofdm_modulator():
         """
 
         # Scrambler
-        payload_pad = self._padding(message)
+        self._payload_pad = self._padding(message)
 
         N_TAIL_BITS = 6
         
-        self._payload_scrambled = operations.scrambler(payload_pad, pn9_seed=SCRAMBLING_SEED[self._scrambler_seed_index])
+        self._payload_scrambled = operations.scrambler(self._payload_pad, pn9_seed=SCRAMBLING_SEED[self._scrambler_seed_index])
         # Reset the tail bits at 0
         self._payload_scrambled[-N_TAIL_BITS-self._N_PAD:-self._N_PAD] = 0
         # Encoding header
@@ -657,13 +659,13 @@ class Mr_ofdm_modulator():
         LTF_I, LTF_Q = self._LTF()
 
         # Generate header
-        PHR_I, PHR_Q, mod_phy = self._PHR(message_binary.size)
+        self._PHR_I, self._PHR_Q, self._mod_phy = self._PHR(message_binary.size)
 
         # Generate Payload
-        PAYLOAD_I, PAYLOAD_Q = self._payload(message_binary, mod_phy)
+        self._PAYLOAD_I, self._PAYLOAD_Q = self._payload(message_binary, self._mod_phy)
         
-        I = np.block([STF_I, LTF_I, PHR_I, PAYLOAD_I])
-        Q = np.block([STF_Q, LTF_Q, PHR_Q, PAYLOAD_Q])
+        I = np.block([STF_I, LTF_I, self._PHR_I, self._PAYLOAD_I])
+        Q = np.block([STF_Q, LTF_Q, self._PHR_Q, self._PAYLOAD_Q])
 
         # I and Q signals frequency
         # We know a symbol (with cyclic prefix) is 120us
