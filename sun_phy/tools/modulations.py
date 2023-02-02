@@ -160,14 +160,23 @@ class QAM16(Modulator):
 
             BPSK_mod = BPSK(axis=0)
 
-            # Imaginary part
-            imag = BPSK_mod.convert(signal[(None if self.MSB_first else 3)::4, :]) * 2 * 1j * (BPSK_mod.convert(
-                signal[(1 if self.MSB_first else 2)::4, :]) / 2 + 1)
-            # Real part
-            real = BPSK_mod.convert(signal[(2 if self.MSB_first else 1)::4, :]) * 2 * (BPSK_mod.convert(
-                signal[(3 if self.MSB_first else None)::4, :]) /2 + 1)
+            b0 = BPSK_mod.convert(signal[::4, :])
+            b1 = BPSK_mod.convert(signal[1::4, :])
+            b2 = BPSK_mod.convert(signal[2::4, :])
+            b3 = BPSK_mod.convert(signal[3::4, :])
 
-            output = real + imag
+            real = (b0 * (2 - b1))
+            imag = (b2 * (2 - b3))
+
+
+            # # Imaginary part
+            # imag = BPSK_mod.convert(signal[(None if self.MSB_first else 3)::4, :]) * 2 * 1j * (BPSK_mod.convert(
+            #     signal[(1 if self.MSB_first else 2)::4, :]) / 2 + 1)
+            # # Real part
+            # real = BPSK_mod.convert(signal[(2 if self.MSB_first else 1)::4, :]) * 2 * (BPSK_mod.convert(
+            #     signal[(3 if self.MSB_first else None)::4, :]) /2 + 1)
+
+            output = real + imag * 1j
 
             return output
 
