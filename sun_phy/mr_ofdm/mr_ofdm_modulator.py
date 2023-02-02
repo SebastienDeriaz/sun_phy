@@ -674,6 +674,9 @@ class Mr_ofdm_modulator():
 
         return I, Q, f
 
+    def bits_per_symbol(self):
+        return self._N_dbps
+
     def _print_verbose(self, message: str):
         """
         Prints additionnal information if the verbose flag is True
