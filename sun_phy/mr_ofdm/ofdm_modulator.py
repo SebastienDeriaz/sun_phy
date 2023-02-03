@@ -474,12 +474,8 @@ class Ofdm_modulator():
         ### Cyclic prefix ###
         signal_cyclic = self._cyclic_prefix(signal)
 
-        ### Output signals ###
-        I, Q = signal_cyclic.real.reshape(
-            -1, order='F'), signal_cyclic.imag.reshape(-1, order='F')
-        t = np.arange(0, I.size * Ts, Ts)
-
-        return I, Q, t
+        ### Reshape output to a single vector ###
+        return signal_cyclic.reshape(-1, order='F')
 
     def subcarriersToIQ(self, subcarriers):
         """
@@ -494,12 +490,8 @@ class Ofdm_modulator():
 
         Returns
         -------
-            I : ndarray
-                Real part of the signal
-            Q : ndarray 
-                Imaginary part of the signal
-            t : ndarray
-                Time vector
+            output : ndarray
+                Output complex signal
         """
         if subcarriers.ndim == 1:
             subcarriers = subcarriers.reshape(-1, 1)
@@ -516,11 +508,8 @@ class Ofdm_modulator():
 
         ### Cyclic prefix ###
         signal_cyclic = self._cyclic_prefix(signal)
-        t = np.arange(0, signal_cyclic.shape[0] * Ts, Ts)
 
-        I, Q = signal_cyclic.real, signal_cyclic.imag
-
-        return I, Q, t
+        return signal_cyclic
 
     def get_pilot_set_index(self):
         """

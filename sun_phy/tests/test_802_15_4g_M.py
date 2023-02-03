@@ -83,14 +83,11 @@ def test_time_domain():
     ERROR_THRESHOLD = 1e-6
 
     # Create STF
-    STF_I, STF_Q = modulator._STF()
-    STF = STF_I + STF_Q * 1j
+    STF = modulator._STF()
     # Create LTF
-    LTF_I, LTF_Q = modulator._LTF()
-    LTF = LTF_I + LTF_Q * 1j
+    LTF = modulator._LTF()
     # Create complete signal
-    I, Q, _ = modulator.message_to_IQ(message_binary, binary=True)
-    IQ = I + Q * 1j
+    IQ, _ = modulator.message_to_IQ(message_binary, binary=True)
 
     # Load theoretical data
     data_th = np.genfromtxt(join(tables_path, 'M.11.csv'),

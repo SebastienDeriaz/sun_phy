@@ -329,10 +329,8 @@ class Mr_ofdm_modulator():
 
         Returns
         -------
-        I : ndarray
-            Real part of the signal
-        Q : ndarray
-            Imaginary part of the signal
+        output : ndarray
+            stf complex signal
         """
         self._print_verbose("Creating STF....")
         self._print_verbose(
@@ -351,8 +349,8 @@ class Mr_ofdm_modulator():
         mod = Ofdm_modulator(N_FFT=FFT_SIZE[self._OFDM_Option], CP=STF_CP)
 
         # Time domain STF symbol with cyclic prefix
-        STF_I, STF_Q, _ = mod.subcarriersToIQ(STF[self._OFDM_Option])
-        STF_time_domain = (STF_I + STF_Q * 1j).squeeze()
+        stf = mod.subcarriersToIQ(STF[self._OFDM_Option])
+        STF_time_domain = stf.squeeze()
         # Fourth symbol (inverted end)
         STF_time_domain_fourth = STF_time_domain * \
             np.block([np.ones(STF_time_domain.size // 5 * 3),
@@ -360,11 +358,11 @@ class Mr_ofdm_modulator():
         # Create the signal with the four symbols
         signal = np.block([STF_time_domain, STF_time_domain,
                           STF_time_domain, STF_time_domain_fourth])
-        I, Q = signal.real * POWER_BOOSTING_FACTOR, signal.imag * POWER_BOOSTING_FACTOR
+        output = signal * POWER_BOOSTING_FACTOR
 
         self._print_verbose(f"    STF signal is {signal.size} elements")
 
-        return I, Q
+        return output
 
     def _LTF(self):
         """
@@ -378,10 +376,8 @@ class Mr_ofdm_modulator():
 
         Returns
         -------
-        I : ndarray
-            Real part of the signal
-        Q : ndarray
-            Imaginary part of the signal
+        output : ndarray
+            ltf complex signal
         """
         self._print_verbose("Generating LTF...")
         self._print_verbose("    LTF signal looks like : |CP----|----|")
@@ -389,17 +385,16 @@ class Mr_ofdm_modulator():
         # OFDM modulator for the LTF excusively. No padding because we will add it manually
         mod = Ofdm_modulator(N_FFT=FFT_SIZE[self._OFDM_Option], CP=0)
         # LTF signal without cyclic prefix (CP)
-        LTF_I, LTF_Q, _ = mod.subcarriersToIQ(LTF[self._OFDM_Option])
-        LTF_signal = (LTF_I + 1j*LTF_Q).squeeze()
+        ltf = mod.subcarriersToIQ(LTF[self._OFDM_Option])
+        LTF_signal = ltf.squeeze()
         # Create the cyclic prefix (second half of the first symbol)
         CP = LTF_signal[LTF_signal.size//2:]
         # Create the complete signal
         signal = np.block([CP, LTF_signal, LTF_signal])
-        I, Q = signal.real, signal.imag
 
         self._print_verbose(f"    LTF signal is {signal.size} elements")
 
-        return I, Q
+        return signal
 
     def _encoder(self, x, rate):
         """
@@ -522,10 +517,8 @@ class Mr_ofdm_modulator():
 
         Returns
         -------
-        I : ndarray
-            Real part of the signal
-        Q : ndarray
-            Imaginary part of the signal
+        phr : ndarray
+            phr complex signal
         mod_phy : Ofdm_modulator
             OFDM modulator used for the PHR
         """
@@ -568,12 +561,12 @@ class Mr_ofdm_modulator():
         
         
 
-        PHR_I, PHR_Q, _ = mod_phy.messageToIQ(self._PHY_header_interleaved, pad=False)
-        self._print_verbose(Fore.LIGHTBLUE_EX + f"header complex (I+jQ) signal is {PHR_I.size} samples" + Fore.RESET)
+        phr = mod_phy.messageToIQ(self._PHY_header_interleaved, pad=False)
+        self._print_verbose(Fore.LIGHTBLUE_EX + f"header complex (I+jQ) signal is {phr.size} samples" + Fore.RESET)
 
         self._phr_subcarriers = mod_phy._subcarriers
 
-        return PHR_I, PHR_Q, mod_phy
+        return phr, mod_phy
     
     def _payload(self, message, mod_phy):
         """
@@ -588,10 +581,8 @@ class Mr_ofdm_modulator():
 
         Returns
         -------
-        I : ndarray
-            Real part of the signal
-        Q : ndarray
-            Imaginary part of the signal
+        payload : ndarray
+            Output complex signal
         """
 
         # Scrambler
@@ -625,9 +616,9 @@ class Mr_ofdm_modulator():
             initial_pilot_set = mod_phy.get_pilot_set_index(),
             initial_pn9_seed = mod_phy.get_pn9_value())
 
-        PAYLOAD_I, PAYLOAD_Q, _ = mod_payload.messageToIQ(self._payload_interleaved, pad=False)
+        payload = mod_payload.messageToIQ(self._payload_interleaved, pad=False)
 
-        return PAYLOAD_I, PAYLOAD_Q
+        return payload
 
     def message_to_IQ(self, message, binary):
         """
@@ -643,38 +634,36 @@ class Mr_ofdm_modulator():
 
         Returns
         -------
-        I : ndarray
-            Real part of the signal
-        Q : ndarray
-            Imaginary part of the signal
+        output : ndarray
+            Output complex signal
         f : float
-            I and Q signals frequency
+            Output signal sampling frequency
         """
         # Convert list to numpy array if necessary
         message_binary = to_binary_array(message, binary)
 
         # Generate STF
-        STF_I, STF_Q = self._STF()
+        stf = self._STF()
         # Generate LTF
-        LTF_I, LTF_Q = self._LTF()
+        ltf = self._LTF()
 
         # Generate header
-        self._PHR_I, self._PHR_Q, self._mod_phy = self._PHR(message_binary.size)
+        phr, self._mod_phy = self._PHR(message_binary.size)
 
         # Generate Payload
-        self._PAYLOAD_I, self._PAYLOAD_Q = self._payload(message_binary, self._mod_phy)
+        payload = self._payload(message_binary, self._mod_phy)
         
-        I = np.block([STF_I, LTF_I, self._PHR_I, self._PAYLOAD_I])
-        Q = np.block([STF_Q, LTF_Q, self._PHR_Q, self._PAYLOAD_Q])
+        output = np.block([stf, ltf, phr, payload])
 
-        # I and Q signals frequency
+
         # We know a symbol (with cyclic prefix) is 120us
         # Therefore we can determine the period with 120us / (FFT size * (1+CP))
+
         # And f = (FFT size * (1+CP)) / 120us
         SYMBOL_DURATION = 120e-6 # 120us
         f = FFT_SIZE[self._OFDM_Option] * (1+self._CP) / SYMBOL_DURATION
 
-        return I, Q, f
+        return output, f
 
     def bits_per_symbol(self):
         return self._N_dbps
