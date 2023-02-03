@@ -15,6 +15,8 @@ PSDU = np.array([int(x) for x in '0100000000000000010101100101110100101001111110
 MODULATOR_PARAMETERS = {
     # Example 1
     1 : {
+        "symbolRate" : 50e3,
+        "FSKModulationIndex" : 1,
         "phyMRFSKSFD" : 0,
         "phyFSKPreambleLength" : 4,
         "macFCSType" : 0,
@@ -26,6 +28,8 @@ MODULATOR_PARAMETERS = {
     },
     # Example 2
     2 : {
+        "symbolRate" : 50e3,
+        "FSKModulationIndex" : 1,
         "phyMRFSKSFD" : 0,
         "phyFSKPreambleLength" : 4,
         "macFCSType" : 0,
@@ -38,6 +42,8 @@ MODULATOR_PARAMETERS = {
     },
     # Example 3
     3 : {
+        "symbolRate" : 50e3,
+        "FSKModulationIndex" : 1,
         "phyMRFSKSFD" : 0,
         "phyFSKPreambleLength" : 4,
         "macFCSType" : 0,
@@ -49,6 +55,8 @@ MODULATOR_PARAMETERS = {
     },
     # Example 4
     4 : {
+        "symbolRate" : 50e3,
+        "FSKModulationIndex" : 1,
         "phyMRFSKSFD" : 1,
         "phyFSKPreambleLength" : 4,
         "macFCSType" : 0,
@@ -60,6 +68,8 @@ MODULATOR_PARAMETERS = {
     },
     # Example 5
     5 : {
+        "symbolRate" : 50e3,
+        "FSKModulationIndex" : 1,
         "phyMRFSKSFD" : 1,
         "phyFSKPreambleLength" : 4,
         "macFCSType" : 0,
@@ -71,6 +81,8 @@ MODULATOR_PARAMETERS = {
     },
     # Example 6
     6 : {
+        "symbolRate" : 50e3,
+        "FSKModulationIndex" : 1,
         "phyMRFSKSFD" : 0,
         "phyFSKPreambleLength" : 4,
         "macFCSType" : 0,
@@ -118,7 +130,8 @@ def test_Example1_O_2_4():
 
     PPDU_th = np.genfromtxt(join(tables_path, 'O.2.4.csv'), delimiter=',').astype(int)
     
-    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
+    PPDU = modulator._binarySignal
 
     compare_arrays(PPDU, PPDU_th)
 
@@ -152,7 +165,8 @@ def test_Example2_O_3_5():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[2])
 
-    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
+    PPDU = modulator._binarySignal
 
     PPDU_th = np.genfromtxt(join(tables_path, 'O.3.5.csv'), delimiter=',').astype(int)
 
@@ -228,7 +242,8 @@ def test_Example3_O_4_8():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[3])
 
-    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
+    PPDU = modulator._binarySignal
     PPDU_th = np.genfromtxt(join(tables_path, 'O.4.8.csv'), delimiter=',').astype(int)
 
     compare_arrays(PPDU, PPDU_th)
@@ -289,7 +304,8 @@ def test_Example4_O_5_6():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[4])
 
-    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
+    PPDU = modulator._binarySignal
     PPDU_th = np.genfromtxt(join(tables_path, 'O.5.6.csv'), delimiter=',').astype(int)
 
     compare_arrays(PPDU, PPDU_th)
@@ -322,7 +338,8 @@ def test_Example5_O_6_4():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[5])
 
-    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
+    PPDU = modulator._binarySignal
     PPDU_th = np.genfromtxt(join(tables_path, 'O.6.4.csv'), delimiter=',').astype(int)
 
     compare_arrays(PPDU, PPDU_th)
@@ -398,7 +415,10 @@ def test_Example6_O_7_8():
     """
     modulator = Mr_fsk_modulator(**MODULATOR_PARAMETERS[6])
 
-    PPDU, _ = modulator.message_to_IQ(PSDU, binary=True)
+    modulator.message_to_IQ(PSDU, binary=True)
+    PPDU = modulator._binarySignal
     PPDU_th = np.genfromtxt(join(tables_path, 'O.7.8.csv'), delimiter=',').astype(int)
+
+    print(PPDU)
 
     compare_arrays(PPDU, PPDU_th)
