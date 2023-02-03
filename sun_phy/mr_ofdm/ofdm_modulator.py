@@ -16,7 +16,7 @@ from numpy.fft import fft, ifft, fftshift, ifftshift, fftfreq
 
 
 class Ofdm_modulator():
-    def __init__(self, N_FFT=32, BW=8e6, modulation='BPSK', modulation_factor=1, CP=1/8,
+    def __init__(self, N_FFT=32, modulation='BPSK', modulation_factor=1, CP=1/8,
                  padding_left=0, padding_right=0, pilots_indices=None, pilots_values=None, frequency_spreading=1,
                  initial_pilot_set=0, initial_pn9_seed=0x1FF, MSB_first=True, verbose=False):
         """
@@ -26,8 +26,6 @@ class Ofdm_modulator():
         ----------
         N_FFT : int
             Number of FFT channels used (default 32)
-        BW : int, float
-            Half bandwidth in Hz, total is 2*BW (default 8 Mhz)
         modulation : {'BPSK', 'QPSK', 'QAM16'}
             Type of modulation used, by default BPSK
         modulation_factor : float
@@ -72,8 +70,6 @@ class Ofdm_modulator():
         else:
             if not math.log(N_FFT, 2).is_integer():
                 raise ValueError("N_FFT must be a power of 2")
-        if not (isinstance(BW, int) or isinstance(BW, float)):
-            raise ValueError("BW must be int or float")
         if not isinstance(modulation, str):
             raise ValueError("modulation must be str")
             # No need to check for valid string, the modulation module will do it
@@ -134,7 +130,6 @@ class Ofdm_modulator():
 
         # Save the values in the class
         self._N_FFT = N_FFT
-        self._BW = BW
         self._modulator = get_modulator(modulation, MSB_first=MSB_first)
         self._verbose = verbose
         self._padding_left = padding_left
@@ -153,8 +148,6 @@ class Ofdm_modulator():
 
         # Used only with variable pilots indices (multiple columns)
         self._pilots_column_index = initial_pilot_set
-
-        self._print_verbose(f"Bandwidth = {BW}")
 
     def _split_message(self, message, pad=False):
         """
@@ -381,8 +374,6 @@ class Ofdm_modulator():
 
         Returns
         -------
-        t : numpy array
-            time vector
         signal : numpy array
             time domain signal
         """
@@ -390,11 +381,8 @@ class Ofdm_modulator():
         # ifftshift is very important since the spectrum was created "how it looks" but the ifft does 0-> Fs/2 -> -Fs/2 -> 0-dF
         self._subcarriers = channels.squeeze()
         signal = ifft(ifftshift(channels, axes=0), axis=0, norm='ortho')
-        # Time vector (and corresponding sampling period)
-        deltaF = 2*self._BW / (channels.shape[0]-1)
-        Ts = 1/(signal.shape[0] * deltaF)
 
-        return Ts, signal
+        return signal
 
     def _cyclic_prefix(self, signal):
         """
@@ -438,8 +426,6 @@ class Ofdm_modulator():
             Real part of the signal
         Q : ndarray
             Imaginary part of the signal
-        t : ndarray
-            time vector
         """
         # Convert list to numpy array if necessary
         if isinstance(message, list):
@@ -469,7 +455,7 @@ class Ofdm_modulator():
             message_split_mapped_spread)
 
         ### IFFT ###
-        Ts, signal = self._ifft(message_split_mapped_pilots)
+        signal = self._ifft(message_split_mapped_pilots)
 
         ### Cyclic prefix ###
         signal_cyclic = self._cyclic_prefix(signal)
@@ -504,7 +490,7 @@ class Ofdm_modulator():
                 f"Invalid number of subcarriers ({subcarriers.shape[0]} / {self._N_FFT})")
 
         ### IFFT ###
-        Ts, signal = self._ifft(subcarriers)
+        signal = self._ifft(subcarriers)
 
         ### Cyclic prefix ###
         signal_cyclic = self._cyclic_prefix(signal)
