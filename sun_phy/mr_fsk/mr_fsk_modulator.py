@@ -386,7 +386,11 @@ class Mr_fsk_modulator:
             Sampling frequency
         """
         # Frequency deviation (from the center)
-        fdev = self._symbol_rate * self._FSKModulationIndex / 2
+        deltaF = self._symbol_rate * self._FSKModulationIndex / 2
+        if self._modulation == Modulation.FSK2:
+            fdev = deltaF
+        else:
+            fdev = 3 * deltaF
 
         mod = {
             # 2FSK
