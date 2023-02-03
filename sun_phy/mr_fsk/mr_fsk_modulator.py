@@ -378,10 +378,8 @@ class Mr_fsk_modulator:
 
         Returns
         -------
-        I : np.ndarray
-            Real part
-        Q : np.ndarray
-            Imaginary part
+        output : ndarray
+            Complex output signal
         f : float
             Sampling frequency
         """
@@ -421,7 +419,7 @@ class Mr_fsk_modulator:
 
         IQ = np.exp(2*np.pi*f*1j*t)
 
-        return IQ.real, IQ.imag, 1/dt
+        return IQ, 1/dt
 
     def message_to_IQ(self, message, binary=False):
         """
