@@ -18,7 +18,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=long_description,
     packages=find_packages(),
-    install_requires=['numpy'],
+    install_requires=['numpy', 'colorama'],
     keywords=['python', '802.15.4g', 'mr-fsk', 'mr-o-qpsk', 'mr-ofdm', 'ofdm', 'modulation', 'modulator', 'sdr', 'iq'],
     classifiers=[
         "Development Status :: 3 - Alpha",
