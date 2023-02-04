@@ -252,7 +252,7 @@ PHR_N_SYMBOLS = {
 }
 
 class Mr_ofdm_modulator():
-    def __init__(self, MCS=0, OFDM_Option=1, phyOFDMInterleaving=0, scrambler=0, verbose=False):
+    def __init__(self, MCS, OFDM_Option, phyOFDMInterleaving, scrambler, verbose=False):
         """
         MR-OFDM Modulator
 

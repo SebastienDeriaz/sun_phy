@@ -16,8 +16,8 @@ from numpy.fft import fft, ifft, fftshift, ifftshift, fftfreq
 
 
 class Ofdm_modulator():
-    def __init__(self, N_FFT=32, modulation='BPSK', modulation_factor=1, CP=1/8,
-                 padding_left=0, padding_right=0, pilots_indices=None, pilots_values=None, frequency_spreading=1,
+    def __init__(self, N_FFT, modulation, modulation_factor, CP,
+                 padding_left, padding_right, frequency_spreading=1, pilots_indices=None, pilots_values=None, 
                  initial_pilot_set=0, initial_pn9_seed=0x1FF, MSB_first=True, verbose=False):
         """
         Returns an OFDM modulator with the desired settings
@@ -36,6 +36,11 @@ class Ofdm_modulator():
             Empty FFT channels on the left (negative frequencies)
         padding_right : int
             Empty FFT channels on the right (positive frequencies)
+        frequency_spreading : int
+            1 : no spreading
+            2 : 2x spreading (half the data rate)
+            4 : 4x spreading (1/4 the data rate)
+            See 18.2.3.6 Frequency spreading
         pilots_indices : numpy array
             Indices of pilots in the OFDM symbol.
             If 1D : pilots positions are constant throughout the symbols.
@@ -50,11 +55,6 @@ class Ofdm_modulator():
             If 1D array     : sequence of pilots (restarts when the end is reached). A single value in the array is valid
             If "pn9"        : use a pseudo-random (PN9) sequence to generate pilots values
             None by default (no pilots)
-        frequency_spreading : int
-            1 : no spreading
-            2 : 2x spreading (half the data rate)
-            4 : 4x spreading (1/4 the data rate)
-            See 18.2.3.6 Frequency spreading
         initial_pilot_set : int
             If multiple pilot sets are specified, this value is the starting one (defaults to 0)
         initial_pn9_seed : int
