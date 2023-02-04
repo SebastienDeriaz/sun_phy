@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import codecs
 import os
 
-VERSION = '0.0.1'
+VERSION = '0.1.0'
 DESCRIPTION = 'Software SUN PHY modulator'
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -19,7 +19,8 @@ setup(
     long_description=long_description,
     packages=find_packages(),
     install_requires=['numpy', 'colorama'],
-    keywords=['python', '802.15.4g', 'mr-fsk', 'mr-o-qpsk', 'mr-ofdm', 'ofdm', 'modulation', 'modulator', 'sdr', 'iq'],
+    keywords=['python', '802.15.4g', 'mr-fsk', 'mr-o-qpsk',
+        'mr-ofdm', 'ofdm', 'modulation', 'modulator', 'sdr', 'iq'],
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Education",
