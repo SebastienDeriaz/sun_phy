@@ -55,7 +55,18 @@ NRNSC_TAIL_BITS = np.array([0, 0, 0])
 
 
 class Mr_fsk_modulator:
-    def __init__(self, symbolRate : int, FSKModulationIndex : int, phyMRFSKSFD : int, modulation : str, phyFSKFECEnabled : bool, phyFSKFECScheme : int, macFCSType : int, phyFSKScramblePSDU : bool, phyFSKFECInterleavingRSC : bool, phyFSKPreambleLength : int = 4):
+    def __init__(self,
+        symbolRate : int,
+        FSKModulationIndex : int,
+        phyMRFSKSFD : int,
+        modulation : str,
+        phyFSKFECEnabled : bool,
+        phyFSKFECScheme : int,
+        macFCSType : int,
+        phyFSKScramblePSDU : bool,
+        phyFSKFECInterleavingRSC : bool,
+        phyFSKPreambleLength : int = 4,
+        verbose = False):
         """
         Creates an instance of a MR-FSK modulator
 
@@ -148,6 +159,7 @@ class Mr_fsk_modulator:
         self._phyFSKScramblePSDU = phyFSKScramblePSDU
         self._phyFSKFECInterleavingRSC = phyFSKFECInterleavingRSC
         self._phyFSKFECScheme = phyFSKFECScheme
+        self._verbose = verbose
 
     def _bin(self, number, width=8, MSB_first=True):
         """
@@ -501,7 +513,7 @@ class Mr_fsk_modulator:
         message_bin = to_binary_array(bytes)
         return self.bitsToIQ(message_bin)
 
-    def mode_switch_to_IQ(self, modeSwitchParameterEntry, new_mode_fec):
+    def modeSwitchToIQ(self, modeSwitchParameterEntry, new_mode_fec):
         """
 
         new_mode_fec : bool
@@ -518,3 +530,10 @@ class Mr_fsk_modulator:
         else:
             raise TypeError(
                 "Invalid modeSwitchParameterEntry type. It should be int")
+
+    def _print_verbose(self, message: str):
+        """
+        Prints additionnal information if the verbose flag is True
+        """
+        if(self._verbose):
+            print(message)

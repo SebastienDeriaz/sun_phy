@@ -18,7 +18,7 @@ from numpy.fft import fft, ifft, fftshift, ifftshift, fftfreq
 class Ofdm_modulator():
     def __init__(self, N_FFT, modulation, modulation_factor, CP,
                  padding_left, padding_right, frequency_spreading=1, pilots_indices=None, pilots_values=None, 
-                 initial_pilot_set=0, initial_pn9_seed=0x1FF, MSB_first=True, verbose=False):
+                 initial_pilot_set=0, initial_pn9_seed=0x1FF, verbose=False):
         """
         Returns an OFDM modulator with the desired settings
 
@@ -61,8 +61,6 @@ class Ofdm_modulator():
             Initial value for the pn9 sequence (if used)
         verbose : bool
             if True, prints informations throughout the process (False by default)
-        MSB_first : bool
-            Specifies is the MSB is first in the message (True by default)
         """
         # Check types and values
         if not isinstance(N_FFT, int):
@@ -94,10 +92,14 @@ class Ofdm_modulator():
         # Manage pilots
         if pilots_values is not None:
             # Check for types
-            if not isinstance(pilots_indices, np.ndarray):
-                raise ValueError("pilots_indices must be a numpy array")
+            if isinstance(pilots_indices, list):
+                pilots_indices = np.asarray(pilots_indices)
+            elif not isinstance(pilots_indices, np.ndarray):
+                raise ValueError("pilots_indices must be a numpy array or a list")
             if not np.all(np.diff(pilots_indices, axis=0) >= 0):
                 raise ValueError("Pilots indices must be ordered")
+            if isinstance(pilots_values, list):
+                pilots_values = np.asarray(pilots_values)
             if not (isinstance(pilots_values, np.ndarray) or isinstance(pilots_values, str)):
                 raise ValueError(
                     "Invalid pilots values type (must be numpy array or str)")
@@ -130,7 +132,7 @@ class Ofdm_modulator():
 
         # Save the values in the class
         self._N_FFT = N_FFT
-        self._modulator = get_modulator(modulation, MSB_first=MSB_first)
+        self._modulator = get_modulator(modulation)
         self._verbose = verbose
         self._padding_left = padding_left
         self._padding_right = padding_right

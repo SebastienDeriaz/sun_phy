@@ -8,7 +8,8 @@ tables_path = "sun_phy/tests/tables"
 MODULATOR_SETTINGS = {
     "MCS": 3,
     "OFDM_Option": 2,
-    "phyOFDMInterleaving": False
+    "phyOFDMInterleaving": False,
+    "scrambler": 0
 }
 
 message = np.genfromtxt(join(tables_path, "L.1.csv"), delimiter=',').astype(int)

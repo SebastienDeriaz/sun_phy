@@ -346,7 +346,14 @@ class Mr_ofdm_modulator():
         STF_CP = 1/4
         POWER_BOOSTING_FACTOR = 1.25  # See 18.2.1.1.4
         # OFDM modulator for the STF symbols specifically
-        mod = Ofdm_modulator(N_FFT=FFT_SIZE[self._OFDM_Option], CP=STF_CP)
+        mod = Ofdm_modulator(
+            N_FFT=FFT_SIZE[self._OFDM_Option],
+            modulation_factor=1.0,
+            modulation='BPSK',
+            CP=STF_CP,
+            padding_left=0,
+            padding_right=0,
+            frequency_spreading=1)
 
         # Time domain STF symbol with cyclic prefix
         stf = mod.subcarriersToIQ(STF[self._OFDM_Option])
@@ -383,7 +390,13 @@ class Mr_ofdm_modulator():
         self._print_verbose("    LTF signal looks like : |CP----|----|")
 
         # OFDM modulator for the LTF excusively. No padding because we will add it manually
-        mod = Ofdm_modulator(N_FFT=FFT_SIZE[self._OFDM_Option], CP=0)
+        mod = Ofdm_modulator(N_FFT=FFT_SIZE[self._OFDM_Option],
+            modulation_factor=1.0,
+            modulation='BPSK',
+            CP=0,
+            padding_left=0,
+            padding_right=0,
+            frequency_spreading=1)
         # LTF signal without cyclic prefix (CP)
         ltf = mod.subcarriersToIQ(LTF[self._OFDM_Option])
         LTF_signal = ltf.squeeze()
