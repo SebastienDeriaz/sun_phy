@@ -53,7 +53,7 @@ def test_payload():
     modulator = Mr_ofdm_modulator(**MODULATOR_SETTINGS)
 
     # Run complete modulator
-    modulator.message_to_IQ(message_binary, binary=True)
+    modulator.bytesToIQ(message)
 
     # Read the theorethical values from the norm
     payload_scrambled_th = np.genfromtxt(
@@ -86,7 +86,7 @@ def test_time_domain():
     # Create LTF
     LTF = modulator._LTF()
     # Create complete signal
-    IQ, _ = modulator.message_to_IQ(message_binary, binary=True)
+    IQ, _ = modulator.bitsToIQ(message_binary)
 
     # Load theoretical data
     data_th = np.genfromtxt(join(tables_path, 'L.14.csv'),
@@ -124,7 +124,7 @@ def test_time_domain_from_bytes():
     # Create LTF
     LTF = modulator._LTF()
     # Create complete signal
-    IQ, _ = modulator.message_to_IQ(message, binary=False)
+    IQ, _ = modulator.bytesToIQ(message)
 
     # Load theoretical data
     data_th = np.genfromtxt(join(tables_path, 'L.14.csv'),

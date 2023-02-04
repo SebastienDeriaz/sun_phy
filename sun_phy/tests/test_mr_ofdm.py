@@ -34,4 +34,4 @@ def test_parameters():
                     else:
                         modulator = Mr_ofdm_modulator(MCS=MCS, OFDM_Option=OFDM_Option, phyOFDMInterleaving=phyOFDMInterleaving, scrambler=scrambler)
                     
-                    modulator.message_to_IQ(b'test_message', binary=False)
+                    modulator.bytesToIQ(b'test_message')

@@ -14,7 +14,7 @@ import numpy as np
 from enum import Enum
 
 from ..tools.errors import UnsupportedError
-from ..tools.bits import to_bin, to_int, from_bitstring
+from ..tools.bits import to_bin, to_int, from_bitstring, check_binary_array, to_binary_array
 
 from colorama import Fore
 
@@ -529,7 +529,7 @@ MDSSS_SUPPORTED_FREQUENCY_BANDS = {
 }
 
 class Mr_o_qpsk_modulator:
-    def __init__(self, frequency_band: Frequency_band, rate_mode: int, spreading_mode: int):
+    def __init__(self, frequency_band: Frequency_band, rate_mode: int, spreading_mode: int, samples_per_symbol=10, verbose=False):
         """
         Creates an instance of a MR-FSK modulator
 
@@ -539,19 +539,22 @@ class Mr_o_qpsk_modulator:
         rate_mode : int
         spreading_mode : int
             Use DSSS spreading mode (0) or MDSSS (1)
+        samples_per_symbol : Number of sampled value for each symbol
+        verbose : bool
+            Enable the printing of additionnal information
         """
+        # Checks
         if spreading_mode == SpreadingMode.MDSSS.value:
             # Check if the frequency band is supported
             if not MDSSS_SUPPORTED_FREQUENCY_BANDS[frequency_band]:
                 raise UnsupportedError(f"Unsupported frequency band {frequency_band} for MDSSS spreading")
 
 
-
-
-        # Checks
+        self._samples_per_symbol = samples_per_symbol
         self._SM = spreading_mode
         self._frequency_band = frequency_band
         self._RM = rate_mode
+        self._verbose = verbose
 
     def _BDE(self, message, Eprevious, M=0):
         """
@@ -727,18 +730,23 @@ class Mr_o_qpsk_modulator:
         pad = np.mod(message_binary.size, 8)
         if pad > 0:
             message_binary = np.concatenate([message_binary, np.zeros(pad, dtype=np.uint8)])
+            self._print_verbose(f"Padding binary message with {pad} zeros ({message_binary.size-pad} -> {message_binary.size})")
 
 
         # Insert the p value (=0) to transform each octet into a 9-bit word
         p = 0
         message_p = np.insert(message_binary, (np.arange(message_binary.size // 8)+1) * 8, p) 
+
         # Split the message into corresponding bitstreams (one per row)
         message_split = message_p.reshape(3, -1, order='F')
+        print(f"Splitting message {message_p.shape} -> {message_split.shape}")
 
         # Call Hadamard encoder
         bitstreams_3 = self._hadamard_encoder(message_split, N)
+        print(f"Applying Hadamard encoder {message_split.shape} -> {bitstreams_3.shape}")
 
         output = self._SPC_encoder(bitstreams_3)
+        print(f"Applying SPC encodee {bitstreams_3.shape} -> {output.shape}")
 
         return output
 
@@ -796,7 +804,9 @@ class Mr_o_qpsk_modulator:
 
         """
         N = spreading_factor // 4
+        self._print_verbose(f"TPC N = {N}")
         bitstreams = self._TPC(message, N)
+        self._print_verbose(f"TPC Encoding {message.shape} -> {bitstreams.shape}")
 
         # Call the spreading and multiplexing function
         output = self._spreading_multiplexing(bitstreams, N)
@@ -974,37 +984,37 @@ class Mr_o_qpsk_modulator:
 
         return output
 
-    def _message_to_bits(self, byte_message):
-        """
-        Check message and convert to bitstream
+    # def _message_to_bits(self, byte_message):
+    #     """
+    #     Check message and convert to bitstream
 
-        Parameters
-        ----------
-        byte_message : bytearray, ndarray
-            Message to convert (bytearray or unsigned int array)
+    #     Parameters
+    #     ----------
+    #     byte_message : bytearray, ndarray
+    #         Message to convert (bytearray or unsigned int array)
 
-        Returns
-        -------
-        bitstream : ndarray
-            Output signal (ndarray of 0 or 1)
-        """
-        if isinstance(byte_message, np.ndarray):
-            if np.issubdtype(byte_message, np.integer):
-                if byte_message.min() < 0 or byte_message.max() > 255:
-                    raise ValueError(
-                        "Invalid byte_message range. It should be between 0 and 255")
-            else:
-                raise TypeError(
-                    "byte_message dtype is invalid. It should be integer")
-        elif not (isinstance(byte_message, bytearray) or isinstance(byte_message, bytes)):
-            raise TypeError(
-                "Invalid byte_messsage type. It should be bytearray or a ndarray of integers")
-        else:
-            byte_message = np.array(list(byte_message), dtype=np.uint8)
+    #     Returns
+    #     -------
+    #     bitstream : ndarray
+    #         Output signal (ndarray of 0 or 1)
+    #     """
+    #     if isinstance(byte_message, np.ndarray):
+    #         if np.issubdtype(byte_message, np.integer):
+    #             if byte_message.min() < 0 or byte_message.max() > 255:
+    #                 raise ValueError(
+    #                     "Invalid byte_message range. It should be between 0 and 255")
+    #         else:
+    #             raise TypeError(
+    #                 "byte_message dtype is invalid. It should be integer")
+    #     elif not (isinstance(byte_message, bytearray) or isinstance(byte_message, bytes)):
+    #         raise TypeError(
+    #             "Invalid byte_messsage type. It should be bytearray or a ndarray of integers")
+    #     else:
+    #         byte_message = np.array(list(byte_message), dtype=np.uint8)
 
-        bitstream = np.unpackbits(byte_message, bitorder='big')
+    #     bitstream = np.unpackbits(byte_message, bitorder='big')
 
-        return bitstream
+    #     return bitstream
 
     def _o_qpsk_modulator(self, cPPDU, samples_per_symbol):
         """
@@ -1049,32 +1059,24 @@ class Mr_o_qpsk_modulator:
 
         return y, f
 
-    def message_to_IQ(self, message, binary=False, samples_per_symbol=10):
+    def bitsToIQ(self, bits):
         """
-        Encodes the given message with MR-FSK modulator
+        Encode a binary message (list of bits) with MR-O-QPSK modulator
 
         Parameters
         ----------
-        message : ndarray
-            Message to encode (PSDU)
-        binary : bool
-            Specifies if the message is a bit array or a byte array.
-            If the message is a byte array, it can be of type bytearray or a ndarray of integers
+        bits : ndarray or list
+            List of bits to send (PSDU)
 
         Returns
         -------
         signal : ndarray
             output bitstream
         f : float
-            signal frequency
+            signal frequency        
         """
-        if not binary:
-            message_bin = self._message_to_bits(message)
-        else:
-            if isinstance(message, np.ndarray) and message.min() >= 0 and message.max() <= 1:
-                message_bin = message.astype(int)
-            else:
-                raise ValueError("Invalid binary message")
+        bits = check_binary_array(bits)
+
         # Reference : Figure 144
         # SHR
         shr = self._SHR()
@@ -1082,7 +1084,7 @@ class Mr_o_qpsk_modulator:
         self._cSHR = self._DSSS(
             self._shr_bde, spreading=SHR_SPREADING[self._frequency_band])
         # PHR
-        phr = self._PHR(message_bin.size // 8)
+        phr = self._PHR(bits.size // 8)
         self._phr_encoded = self._FEC(phr, isPSDU=False)
         self._phr_interleaved = self._interleaver(
             self._phr_encoded, isPSDU=False)
@@ -1094,11 +1096,11 @@ class Mr_o_qpsk_modulator:
         # FEC + interleaving always active with DSSS, only active with Spreading
         # mode is 0 or 1 with MDSSS
         if 0 <= self._RM <= 1 or self._SM == SpreadingMode.DSSS.value: 
-            self._PSDU_encoded = self._FEC(message_bin, isPSDU=True)
+            self._PSDU_encoded = self._FEC(bits, isPSDU=True)
             self._PSDU_interleaved = self._interleaver(self._PSDU_encoded, isPSDU=True)
             self._PSDU_temp = self._PSDU_interleaved
         else:
-            self._PSDU_temp = message_bin
+            self._PSDU_temp = bits
         
 
         if self._SM == SpreadingMode.DSSS.value:
@@ -1126,6 +1128,37 @@ class Mr_o_qpsk_modulator:
             self._cPSDU
         ])
         # Apply O-QPSK modulation
-        signal, f = self._o_qpsk_modulator(cPPDU, samples_per_symbol)       
+        #signal, f = self._o_qpsk_modulator(cPPDU, samples_per_symbol)       
+        signal = 0
+        f = 0
  
         return signal, f
+
+    def bytesToIQ(self, bytes):
+        """
+        Encode a byte-array message (list of bytes) with MR-O-QPSK modulator
+
+        Parameters
+        ----------
+        bytes : ndarray or list or bytes
+            List of bytes to send (PSDU)
+        
+        Returns
+        -------
+        signal : ndarray
+            output bitstream
+        f : float
+            signal frequency
+
+        """
+        # Convert to bits
+        message_bin = to_binary_array(bytes)
+        #message_bin = self._message_to_bits(message)
+        return self.bitsToIQ(message_bin)        
+
+    def _print_verbose(self, message: str):
+        """
+        Prints additionnal information if the verbose flag is True
+        """
+        if(self._verbose):
+            print(message)

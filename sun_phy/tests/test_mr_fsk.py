@@ -38,4 +38,4 @@ def test_parameters_valid(parameters):
     # Instanciate modulator
     modulator = Mr_fsk_modulator(**parameters)
     
-    modulator.message_to_IQ(b'test_message', binary=False)
+    modulator.bytesToIQ(b'test_message')

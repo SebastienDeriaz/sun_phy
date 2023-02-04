@@ -43,8 +43,40 @@ def from_bitstring(bit_string: str) -> np.ndarray:
 
     return np.array([int(x) for x in bit_string.replace(' ', '')], dtype=np.uint8)
 
+def check_binary_array(bits):
+    """
+    Check an input binary array and returns a numpy array of uint8s
 
-def to_binary_array(arr, binary=False):
+    Parameters
+    ----------
+    bits : ndarray or list
+        List of input bits
+    
+    Returns
+    -------
+    output : ndarray
+        List of bits (np.uint8)
+    """
+    # Checks
+    if isinstance(bits, list):
+        # List of bits, convert to numpy array
+        bits = np.asarray(bits)
+    if isinstance(bits, np.ndarray):
+        # Numpy array of bits
+        if bits.ndim != 1:
+            raise ValueError(f"Cannot convert {bits.ndim}-dimensional data ({bits.shape})")
+        elif bits.min() < 0 or bits.max() > 1:
+            raise ValueError(f"Cannot convert values ranging from {bits.min()} to {bits.max()} to binary")
+        bits = bits.astype(np.uint8)
+    else:
+        raise TypeError(f"Invalid input type : {type(bits)}")
+    
+    return bits
+
+
+
+
+def to_binary_array(arr):
     """
     Convert a bytearray, bytes or unsiged int array/list to binary array
 
@@ -73,22 +105,16 @@ def to_binary_array(arr, binary=False):
     else:
         raise TypeError(f"Invalid input array type : {type(arr)}")
 
-    # Phase 2 : Convert to bits (if necessary)
-    if not binary:
-        bit_list = []
-        if arr_temp.min() < 0 or arr_temp.max() > 255:
-            raise ValueError(
-                "Invalid byte_message range. It should be between 0 and 255")
-        
-        for byte in arr_temp:
-            # The order of the bits must be reversed
-            bit_list += [int(x) for x in np.binary_repr(byte, 8)[::-1]]
-        
-        output = np.array(bit_list)
-    else:
-        if arr_temp.min() < 0 or arr_temp.max() > 1:
-            raise ValueError(
-                "Invalid byte_message range. It should be between 0 and 1 (binary mode)")
-        output = arr_temp
+    # Phase 2 : convert to binary
+    bit_list = []
+    if arr_temp.min() < 0 or arr_temp.max() > 255:
+        raise ValueError(
+            "Invalid byte_message range. It should be between 0 and 255")
+    
+    for byte in arr_temp:
+        # The order of the bits must be reversed
+        bit_list += [int(x) for x in np.binary_repr(byte, 8)[::-1]]
+    
+    output = np.array(bit_list)
 
     return output

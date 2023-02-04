@@ -4,7 +4,7 @@ MR-FSK Modulator
 
 import numpy as np
 from enum import Enum
-from ..tools.bits import from_bitstring, to_binary_array
+from ..tools.bits import from_bitstring, to_binary_array, check_binary_array
 from ..tools import operations
 
 from colorama import Fore
@@ -421,17 +421,16 @@ class Mr_fsk_modulator:
 
         return IQ, 1/dt
 
-    def message_to_IQ(self, message, binary=False):
+
+
+    def bitsToIQ(self, bits):
         """
-        Encodes the given message with MR-FSK modulator
+        Encodes the given binary message with MR-FSK modulator
 
         Parameters
         ----------
-        message : ndarray
+        bits : ndarray or list
             Message to encode (PSDU)
-        binary : bool
-            Specifies if the message is a bit array or a byte array.
-            If the message is a byte array, it can be of type bytearray or a ndarray of integers
 
         Returns
         -------
@@ -440,10 +439,10 @@ class Mr_fsk_modulator:
         f : float
             signal frequency
         """
-        message_bin = to_binary_array(message, binary)
+        bits = check_binary_array(bits)
 
         self._PHR_PSDU = np.concatenate(
-            [self._PHR(message_bin.size // 8), message_bin])
+            [self._PHR(bits.size // 8), bits])
 
         # Symbol_length is the number of bits coded for a single symbol. If FEC is disabled, there's one bit per symbol. If FEC is enabled, there's two bits per symbol
 
@@ -482,6 +481,25 @@ class Mr_fsk_modulator:
         samplesPerSymbol = 20
 
         return  self._FSKModulator(self._binarySignal, samplesPerSymbol)
+
+    def bytesToIQ(self, bytes):
+        """
+        Encodes the given message (list of bytes) with MR-FSK modulator
+
+        Parameters
+        ----------
+        bytes : ndarray or list or bytes
+            Message to encode (PSDU) as a list of bytes
+
+        Returns
+        -------
+        signal : ndarray
+            output bitstream
+        f : float
+            signal frequency
+        """
+        message_bin = to_binary_array(bytes)
+        return self.bitsToIQ(message_bin)
 
     def mode_switch_to_IQ(self, modeSwitchParameterEntry, new_mode_fec):
         """

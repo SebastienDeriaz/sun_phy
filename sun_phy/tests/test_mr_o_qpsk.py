@@ -30,4 +30,4 @@ def test_parameters():
                         pass
                 else:
                     modulator = Mr_o_qpsk_modulator(fb, rm, sm)
-                    modulator.message_to_IQ(b'test_message', samples_per_symbol=1)
+                    modulator.bytesToIQ(b'test_message')

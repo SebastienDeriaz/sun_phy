@@ -2,7 +2,7 @@ import numpy as np
 
 from ..tools.errors import UnsupportedError
 
-from ..tools.bits import to_binary_array
+from ..tools.bits import to_binary_array, check_binary_array
 from .ofdm_modulator import Ofdm_modulator
 from ..tools import operations
 from .rate_encoder import Rate_one_half, Rate_three_quarter
@@ -561,7 +561,7 @@ class Mr_ofdm_modulator():
         
         
 
-        phr = mod_phy.messageToIQ(self._PHY_header_interleaved, pad=False)
+        phr = mod_phy.bitsToIQ(self._PHY_header_interleaved, pad=False)
         self._print_verbose(Fore.LIGHTBLUE_EX + f"header complex (I+jQ) signal is {phr.size} samples" + Fore.RESET)
 
         self._phr_subcarriers = mod_phy._subcarriers
@@ -616,21 +616,18 @@ class Mr_ofdm_modulator():
             initial_pilot_set = mod_phy.get_pilot_set_index(),
             initial_pn9_seed = mod_phy.get_pn9_value())
 
-        payload = mod_payload.messageToIQ(self._payload_interleaved, pad=False)
+        payload = mod_payload.bitsToIQ(self._payload_interleaved, pad=False)
 
         return payload
 
-    def message_to_IQ(self, message, binary):
+    def bitsToIQ(self, bits):
         """
-        Encodes the given message with MR-OFDM modulator
+        Encodes the given binary message (PSDU) with MR-OFDM modulator
 
         Parameters
         ----------
-        message : ndarray of bits/octets, bytearray, bytes, list of bits/octets
-            Message to encode
-        binary : bool
-            True : message is an array of bits
-            False : message is an array of octets or a bytearray
+        message : ndarray or list
+            Message to encode as a binary list
 
         Returns
         -------
@@ -639,8 +636,7 @@ class Mr_ofdm_modulator():
         f : float
             Output signal sampling frequency
         """
-        # Convert list to numpy array if necessary
-        message_binary = to_binary_array(message, binary)
+        bits = check_binary_array(bits)
 
         # Generate STF
         stf = self._STF()
@@ -648,10 +644,10 @@ class Mr_ofdm_modulator():
         ltf = self._LTF()
 
         # Generate header
-        phr, self._mod_phy = self._PHR(message_binary.size)
+        phr, self._mod_phy = self._PHR(bits.size)
 
         # Generate Payload
-        payload = self._payload(message_binary, self._mod_phy)
+        payload = self._payload(bits, self._mod_phy)
         
         output = np.block([stf, ltf, phr, payload])
 
@@ -664,6 +660,29 @@ class Mr_ofdm_modulator():
         f = FFT_SIZE[self._OFDM_Option] * (1+self._CP) / SYMBOL_DURATION
 
         return output, f
+
+
+    def bytesToIQ(self, bytes):
+        """
+        Encodes the given message (list of octets) with MR-OFDM modulator
+
+        Parameters
+        ----------
+        message : ndarray of bits/octets, bytearray, bytes, list of bits/octets
+            Message to encode
+            
+        Returns
+        -------
+        output : ndarray
+            Output complex signal
+        f : float
+            Output signal sampling frequency
+        """
+        # Convert to binary signal
+        message_binary = to_binary_array(bytes)
+        # Apply the modualation
+        return self.bitsToIQ(message_binary)
+        
 
     def bits_per_symbol(self):
         return self._N_dbps

@@ -409,13 +409,13 @@ class Ofdm_modulator():
         else:
             return signal
 
-    def messageToIQ(self, message, pad=False):
+    def bitsToIQ(self, bits, pad=False):
         """
         Applies OFDM modulation to the provided message
 
         Parameters
         ----------
-        message : numpy array
+        bits : numpy array
             Array containing the bits to transmit
         pad : bool
             Pad the message with 0s to reach the desired length. False by default
@@ -428,20 +428,20 @@ class Ofdm_modulator():
             Imaginary part of the signal
         """
         # Convert list to numpy array if necessary
-        if isinstance(message, list):
-            message = np.asarray(message)
+        if isinstance(bits, list):
+            bits = np.asarray(bits)
         # Check types and values
-        if not isinstance(message, np.ndarray):
+        if not isinstance(bits, np.ndarray):
             raise ValueError("Message must be a numpy array")
-        message = np.squeeze(message)
-        if message.ndim != 1:
+        bits = np.squeeze(bits)
+        if bits.ndim != 1:
             raise ValueError("Message must be one-dimensional")
-        elif np.mod(message.size, self._message_split_length) != 0 and pad == False:
+        elif np.mod(bits.size, self._message_split_length) != 0 and pad == False:
             raise ValueError(
-                f"Message size must be a multiple of {self._message_split_length} (it currently is {message.size})")
+                f"Message size must be a multiple of {self._message_split_length} (it currently is {bits.size})")
 
         ### Splitting (separating message into OFDM symbols before IFFT) ###
-        message_split = self._split_message(message, pad)
+        message_split = self._split_message(bits, pad)
 
         ### Constellation mapping ###
         message_split_mapped = self._constellation_map(message_split)
