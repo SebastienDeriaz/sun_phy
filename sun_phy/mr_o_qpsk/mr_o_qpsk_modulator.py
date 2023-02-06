@@ -15,6 +15,7 @@ from enum import Enum
 
 from ..tools.errors import UnsupportedError
 from ..tools.bits import to_bin, to_int, from_bitstring, check_binary_array, to_binary_array
+from ..tools.modulations import BPSK
 
 from colorama import Fore
 
@@ -499,11 +500,11 @@ DATA_RATE = {
 
 def half_sine(t, Tc):
     # 0 <= t <= 2*Tc
-    f1 = np.sin(np.pi * t / (2 * Tc))
+    f1 = lambda x : np.sin(np.pi * x / (2 * Tc))
     # otherwise
     f2 = 0
 
-    return np.piecewise(t, [np.logical_and([0 <= t, t <= 2*Tc]), np.logical_or([t < 0, 2*Tc < t])], [f1, f2])
+    return np.piecewise(t, np.logical_and(0 <= t, t <= 2*Tc), [f1, f2])
 
 def raised_cosine(t, Tc):
     r = 0.8
@@ -966,12 +967,11 @@ class Mr_o_qpsk_modulator:
         output : ndarray
             Output bitstream after interleaving
         """
+        # Degree
         if isPSDU:
-            # Degree
             Lambda = 7
             N_INTRLV = 7 * 18
         else:
-            # Degree
             Lambda = 6
             N_INTRLV = 10 * 6
 
@@ -1034,30 +1034,35 @@ class Mr_o_qpsk_modulator:
         f : float
             Output signal sampling frequency
         """
-        zeta = (cPPDU * 2 - 1).astype(int)
-
-        p = raised_cosine
-
-
         # Chip duration
+        bpskMod = BPSK()
+        
+
         chip_rate = DATA_RATE[self._SM][self._frequency_band][self._RM] # bit / s
         Tc = 1 / chip_rate
 
-        t = np.arange(-2*Tc, zeta.size * Tc, Tc / samples_per_symbol)
-        k = np.arange(zeta.size // 2)
+        self._print_verbose(f"Chip rate : {chip_rate/1e3:.2f} kchip/s")
 
-        T1 = np.add(*np.meshgrid(t, -2*k*Tc))
-        T2 = np.add(*np.meshgrid(t, -(2*k -1)*Tc))
+        # BPSK, complex mapped, spread signal
+        self._s = np.zeros(cPPDU.size * samples_per_symbol // 2, dtype=complex)
+        self._s[::samples_per_symbol] = bpskMod.convert(cPPDU[::2]) + 1j * bpskMod.convert(cPPDU[1::2])
+        self._s_t = np.arange(self._s.size) * Tc
+        
+        if self._frequency_band in [Frequency_band.Band_915MHz, Frequency_band.Band_2450MHz]:
+            p = half_sine
+        else:           
+            p = raised_cosine
 
-        # This is the most expensive part of the whole modulator (~ 85% of the time)
-        self._real = zeta[::2].reshape(-1,1) * p(T1, Tc)
-        self._imag = zeta[1::2].reshape(-1,1) * p(T2, Tc)
+        # Pulse signal
+        self._pulse_t = np.linspace(-2*Tc, 2*Tc, samples_per_symbol, endpoint = False)
+        self._pulse = p(self._pulse_t, Tc)
+        
+        # Convolution of the spread s signal and pulse signal
+        output = np.convolve(self._s, self._pulse)
 
-        # Summing real and imaginary part
-        y = np.sum(self._real + 1j * self._imag, axis=0)
-        f = samples_per_symbol / Tc
+        f = chip_rate * samples_per_symbol
 
-        return y, f
+        return output, f
 
     def bitsToIQ(self, bits):
         """
@@ -1122,15 +1127,15 @@ class Mr_o_qpsk_modulator:
 
         self._cPSDU = self._insert_pilots(PSDU_encoded_spread)
         # Concatenate SHR + PHR + PSDU
-        cPPDU = np.concatenate([
+        self._cPPDU = np.concatenate([
             self._cSHR,
             self._cPHR,
             self._cPSDU
         ])
         # Apply O-QPSK modulation
-        #signal, f = self._o_qpsk_modulator(cPPDU, samples_per_symbol)       
-        signal = 0
-        f = 0
+        signal, f = self._o_qpsk_modulator(self._cPPDU, self._samples_per_symbol)
+        #signal = 0
+        #f = 0
  
         return signal, f
 

@@ -161,6 +161,3 @@ def test_cPSDU():
     cPSDU_th = np.genfromtxt(join(tables_path, 'N.5.csv'), delimiter=',').astype(int)
 
     compare_arrays(cPSDU, cPSDU_th)
-
-
-
